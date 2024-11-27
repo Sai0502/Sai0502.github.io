@@ -305,16 +305,21 @@
    
    > ```js
    > ├── jiangsai0502.github.io/
-   >             ├── index.html
-   >             ├── README.md
-   >             ├── .nojekyll
-   >             ├── _sidebar.md
-   >             ├── _coverpage.md
-   >             ├── EnglishVersion/
-   >             ├── imgs/
-   >             └── DocsifyTutorial/
+   >          ├── index.html
+   >          ├── README.md
+   >          ├── .nojekyll
+   >          ├── _sidebar.md
+   >          ├── _coverpage.md
+   >          ├── EnglishVersion/
+   >          ├── imgs/
+   >          └── DocsifyTutorial/
    > ```
-
+   >
+   > 如果是直接复制的项目会缺少`.nojekyll`文件
+   >
+   > ```bash
+   > touch .nojekyll
+   
 2. 按照上面的目录将所有上传至Github即可
 
 ### Notion Blog部署到Gitee

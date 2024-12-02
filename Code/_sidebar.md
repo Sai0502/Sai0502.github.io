@@ -1,5 +1,6 @@
 * 常用脚本
   * [PDF转TXT](Code/Pdf2Txt)
+  * [有用](Code/UsefulScript)
 * PyautoGUI
   * [按键精灵](Code/Key_Wizard)
 * OpenCV

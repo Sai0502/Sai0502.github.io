@@ -135,15 +135,15 @@
 >    brew install wget;
 >    export REMOTE=https://gitee.com/imirror/ohmyzsh.git;
 >    sh -c "$(wget -O- https://cdn.jsdelivr.net/gh/ohmyzsh/ohmyzsh/tools/install.sh)";
->       
+>          
 >    open ~/.zshrc
->       
+>          
 >    # 在.zshrc文件中搜索 source $ZSH/oh-my-zsh.sh，在本句之前加一句
 >    ZSH_DISABLE_COMPFIX="true"
->       
+>          
 >    # 禁用oh-my-zsh自动更新，找到DISABLE_AUTO_UPDATE一行，将行首的注释'#'去掉
 >    DISABLE_AUTO_UPDATE="true"
->       
+>          
 >    source ~/.zshrc
 >    ```
 > 5. 安装PowerFonts字体
@@ -175,7 +175,7 @@
 >
 >    ```
 >    brew install zsh-syntax-highlighting
->       
+>          
 >    open ~/.zshrc
 >    最后插入一行：source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 >    source ~/.zshrc
@@ -202,7 +202,7 @@
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->         
+>             
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 >     
@@ -251,8 +251,15 @@
 > >   >
 > >   > `yt-dlp -f 230 --cookies-from-browser chrome URL`
 > >   >
+> >   > 视频 + 音频
+> >   >
+> >   > * 默认mkv：`yt-dlp -f 242+ 230 --cookies-from-browser chrome URL`
+> >   > * 转mp4：`yt-dlp -f 230 --cookies-from-browser chrome --remux-video mp4 URL`
+> >   >
 > >   > ![img](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202308271236418.png)
-> >   
+> >   >
+> >   > 
+> >
 > > * B站下载
 > >
 > >   ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202309302121718.png)

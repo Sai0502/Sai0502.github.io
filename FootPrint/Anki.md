@@ -97,7 +97,7 @@
 >   >
 >   >   ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202311031057282.png)
 >   >
->   > 4. 设置模版代码，见[Anki卡片模版样式代码](Warehouse/Anki_template.md)
+>   > 4. 设置模版代码，见[Anki卡片模版样式代码](/Warehouse/Anki_template.md)
 >
 > * 自制带书名号的填空题模版（操作步骤见「自制带书名号的问答题模板」）
 >

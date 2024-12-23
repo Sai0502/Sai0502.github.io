@@ -5,7 +5,6 @@
   * [VSCode](Warehouse/VSCode.md)
   * [Blog建站](Warehouse/Blog.md)
   * [Markdown语法](Warehouse/Markdown.md)
-  * [PicGo+GitHub 搭建图床](Warehouse/PicGo_GitHub.md)
   * [声音克隆](Warehouse/Clone_Audio)
   * [Excel技巧](Warehouse/Excel_Skills.md)
   * [Pyecharts入门](Warehouse/1_Pyecharts.md)

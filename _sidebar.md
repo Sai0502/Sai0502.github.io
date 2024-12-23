@@ -1,7 +1,8 @@
 * 日常技巧
   
-  * [Mac技巧](FootPrint/Mac_Skill.md)
-  * [重装Mac](FootPrint/Software_Install_configuration.md)
+  * [Mac重装](FootPrint/Software_Install_configuration.md)
+  * [Mac设置](FootPrint/Mac_Skill.md)
+  * [实用脚本](FootPrint/UsefulScript)
   * [Keyboard_Maestro](FootPrint/Keyboard_Maestro.md)
   * [Anki](FootPrint/Anki.md)
   * [Marginnote](FootPrint/Marginnote.md)

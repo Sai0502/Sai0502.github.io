@@ -19,6 +19,7 @@
 
 > 1. 禁用双指右边缘左滑调佣通知中心：触摸板-更多手势-通知中心（关闭）
 > 2. 启用三指拖移：辅助功能 - 指针控制 - 触控板选项 - 拖移样式 - 三指拖移
+> 3. 启用连接鼠标时禁用触摸板：辅助功能 - 指针控制 - 使用鼠标或无线触控板时忽略内置触控板
 
 **鼠标滚轮缩放**
 
@@ -181,14 +182,14 @@
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->                 
+>                         
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->                 
+>                         
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 
@@ -214,21 +215,25 @@
 >
 >    ```bash
 >    on run
->     do shell script "open -n /Applications/mpv.app"
->     tell application "mpv" to activate
+>        do shell script "open -n /Applications/mpv.app"
+>        tell application "mpv" to activate
 >    end run
 >    
 >    on open theFiles
->     repeat with theFile in theFiles
->         do shell script "open -na /Applications/mpv.app " & quote & (POSIX path of theFile) & quote
->     end repeat
->     tell application "mpv" to activate
+>        repeat with theFile in theFiles
+>            -- 对路径进行适当的转义
+>            set filePath to POSIX path of theFile
+>            set escapedPath to quoted form of filePath
+>            do shell script "open -na /Applications/mpv.app --args " & escapedPath
+>        end repeat
+>        tell application "mpv" to activate
 >    end open
+>    
 >    ```
 >
 > 2. 保存
 >
->    1. 名称：mpv multiple
+>    1. 名称：mpv多开器
 >    2. 文件格式：应用程序
 >
 > 3. 将mpv multiple拖入应用程序，修改视频文件的默认打开方式
@@ -394,3 +399,20 @@
 >
 > 5. grave_accent_and_tilde即键盘esc下方的`
 
+##### Logitech G HUB
+
+> 1. 关闭板载内存模式
+>
+> 2. DPI
+>
+>    > 灵敏度 - 默认设置 - 2400
+>
+> 3. 侧键快捷键
+>
+>    > 分配 -宏 - 新建宏 - 不重复 - 立即开始 - 记录按键 - 停止录制
+>
+>    1. 窗口管理 宏：control ⌃ + ArrowUp ↑
+>    2. 全屏左滑宏：control ⌃ + ArrowLift ←
+>    3. 全屏右滑宏：control ⌃ + ArrowRight →
+>
+> 4. 开启板载内存模式 - 点击 放入1 默认 - 选择桌面 默认 - 等待保存完成

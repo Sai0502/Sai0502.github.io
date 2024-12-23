@@ -67,12 +67,12 @@
    >   python
    >     import subprocess  # 导入subprocess模块，用于执行系统命令
    >     import whisper  # 导入whisper模块，用于语音转文字
-   >     
+   >       
    >     # 定义YouTube视频的URL
    >     youtube_url = "https://www.youtube.com/watch?v=qZ3T5hunOuQ"
    >     # 定义输出的音频文件名
    >     output_audio = "audio.m4a"
-   >     
+   >       
    >     # 使用yt-dlp下载音频并提取为m4a格式，设置为低等品质
    >     # -f bestaudio: 选择最佳音频质量
    >     # --extract-audio: 只提取音频
@@ -94,17 +94,17 @@
    >             youtube_url,
    >         ]
    >     )
-   >     
+   >       
    >     # 加载Whisper模型
    >     # "base" 是模型的大小，可以根据需要选择 "tiny", "base", "small", "medium", "large"
    >     model = whisper.load_model("base")
-   >     
+   >       
    >     # 使用Whisper模型读取音频文件并进行语音转文字
    >     result = model.transcribe(output_audio)
-   >     
+   >       
    >     # 打印转换后的文字
    >     print(result["text"])
-   >     
+   >       
    >     # 将转换后的文字保存到文本文件中
    >     # with open("transcription.txt", "w") as f:
    >     #     f.write(result["text"])
@@ -208,13 +208,13 @@
    >
    >   ```python
    >   import os
-   >     
+   >       
    >   Voice = "zh-CN-YunjianNeural"
    >   Rate = "+0%"
    >   Volume = "+0%"
-   >     
+   >       
    >   Handle_Folder = "/Users/jiangsai/Desktop/1"
-   >     
+   >       
    >   # 转换目录内所有单个txt文件为单个mp3音频
    >   for Folder_Path, SonFolders, FileNames in os.walk(Handle_Folder):
    >       for FileName in FileNames:
@@ -442,6 +442,27 @@
    
    ```
 
-   
+7. 定时提醒
 
-7. 
+   ```python
+   # 时间为15的倍数时铃声提醒 1:15,1:30,1:45
+   import time
+   import os
+   
+   def play_audio():
+       # 使用 afplay 播放音频
+       os.system('afplay /Users/sai/Downloads/冥想-运动/叮咚.MP3') 
+   
+   while True:
+       current_time = time.localtime()
+       minutes = current_time.tm_min
+   
+       if minutes % 15 == 0:
+           print(f"当前时间: {time.strftime('%H:%M', current_time)} - 播放音频")
+           play_audio()
+           time.sleep(60)
+   
+       time.sleep(1)
+   ```
+
+   

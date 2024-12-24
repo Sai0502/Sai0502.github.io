@@ -13,8 +13,6 @@
 > killall ControlCenter
 > ```
 
-
-
 **触摸板**
 
 > 1. 禁用双指右边缘左滑调佣通知中心：触摸板-更多手势-通知中心（关闭）
@@ -60,12 +58,15 @@
 >
 > 3. 最终解决方案
 >
->    `open ~/.zshrc`：（此时大概率没有.zshrc文件，可先安装Oh my zsh后再回来）
->
->    在文件最后添加下面两句
->
->    `export http_proxy="http://127.0.0.1:8234"
->    export https_proxy="http://127.0.0.1:8234"`
+>    ```bash
+>    # 创建 .zshrc 文件
+>    echo >> ~/.zshrc
+>    
+>    open ~/.zshrc
+>    
+>    # 在文件最后添加下面两句
+>    export http_proxy="http://127.0.0.1:8234" export https_proxy="http://127.0.0.1:8234"
+>    ```
 
 **禁止Chrome更新**
 
@@ -77,11 +78,16 @@
 > # 境外源
 > /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 > 
-> # 添加到 PATH 环境变量，否则终端无法识别 brew 命令
-> echo >> /Users/sai/.zprofile
-> echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> /Users/sai/.zprofile
+> # 获取 brew 安装位置
+> which brew
+> # 输出 /usr/local/bin/brew
 > 
-> eval "$(/opt/homebrew/bin/brew shellenv)"
+> # 创建 .zprofile文件
+> echo >> ~/.zprofile
+> 
+> # 添加到 PATH 环境变量，否则终端无法识别 brew 命令
+> # /usr/local/bin/brew 要改成 which brew 输出的位置
+> echo 'eval "$(/usr/local/bin/brew shellenv)"' >> ~/.zprofile
 > 
 > source ~/.zprofile
 > ```
@@ -116,15 +122,15 @@
 >    brew install wget;
 >    export REMOTE=https://gitee.com/imirror/ohmyzsh.git;
 >    sh -c "$(wget -O- https://cdn.jsdelivr.net/gh/ohmyzsh/ohmyzsh/tools/install.sh)";
->    
+>
 >    open ~/.zshrc
->    
+>
 >    # 在.zshrc文件中搜索 source $ZSH/oh-my-zsh.sh，在本句之前加一句
 >    ZSH_DISABLE_COMPFIX="true"
->    
+>
 >    # 禁用oh-my-zsh自动更新：找到 DISABLE_AUTO_UPDATE 一行，将行首的注释'#'去掉
 >    DISABLE_AUTO_UPDATE="true"
->    
+>
 >    source ~/.zshrc
 >    ```
 >
@@ -161,20 +167,25 @@
 >
 >     ```bash
 >     brew install zsh-syntax-highlighting
+>     输出To activate the syntax highlighting, add the following at the end of your .zshrc:
+>       source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 >     
 >     open ~/.zshrc
->     最后插入一行：source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+>     
+>     最后插入一行：source /usr/local/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+>     
 >     source ~/.zshrc
 >     ```
 >
 > 11. 自动提示与命令补全
 >
 >     ```bash
->     下载 https://github.com/zsh-users/zsh-autosuggestions
->     解压并改名为 zsh-autosuggestions
->     拖入目录 ~/.oh-my-zsh/plugins
+>     下载 https://github.com/zsh-users/zsh-autosuggestions，解压并改名为 zsh-autosuggestions
+>     open ~/.oh-my-zsh/plugins
+>     # 将 zsh-autosuggestions 拖入目录 ~/.oh-my-zsh/plugins
 >     open ~/.zshrc
->     搜索'plugins'，修改为plugins=(zsh-autosuggestions)
+>     
+>     搜索'plugins'，修改为 plugins=(zsh-autosuggestions)
 >     source ~/.zshrc
 >     ```
 >
@@ -182,23 +193,30 @@
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->                         
+>     
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->                         
+>     
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 
 ##### 安装mpv
 
-> ```
+> ```bash
 > brew install mpv --cask
 > 
-> # 创建配置文件：~/.config/mpv/input.conf
+> # 打开 mpv 一次
+> # 创建 input.conf 文件
+> echo >> ~/.config/mpv/input.conf
+> 
+> # 打开 input.conf 文件
+> nano ~/.config/mpv/input.conf
+> 
+> # 复制到该文件
 > AXIS_UP add volume -2
 > AXIS_DOWN add volume 2
 > AXIS_LEFT seek -2 exact
@@ -207,6 +225,8 @@
 > RIGHT seek 2 exact
 > UP add volume 2
 > DOWN add volume -2
+> 
+> Ctrl + O 保存，Enter 键确认保存，Ctrl + X 退出 nano 编辑器
 > ```
 >
 > 设置mpv多开
@@ -218,7 +238,7 @@
 >        do shell script "open -n /Applications/mpv.app"
 >        tell application "mpv" to activate
 >    end run
->    
+>
 >    on open theFiles
 >        repeat with theFile in theFiles
 >            -- 对路径进行适当的转义
@@ -228,7 +248,7 @@
 >        end repeat
 >        tell application "mpv" to activate
 >    end open
->    
+>
 >    ```
 >
 > 2. 保存

@@ -334,12 +334,6 @@
               lock_screen()  # 锁屏
       ```
 
-1. Wgetcloud VPN的socket5
-
-      > socks5://127.0.0.1:8234
-
-
-
 ##### 文献阅读：沙拉查词 + Alfred
 
 > [参考](https://zhuanlan.zhihu.com/p/113809716)

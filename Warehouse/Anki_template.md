@@ -1,4 +1,4 @@
-Sai问答
+#### Sai问答
 
 ```
 <meta content="initial-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport" />
@@ -25,9 +25,11 @@ Sai问答
 </div>
 ```
 
-Sai填空
+#### Sai填空
 
-```
+**正面**
+
+```html
 <!-- 设置移动设备上的显示方式，避免页面缩放，让页面始终以合适的比例显示 -->
 <meta content="initial-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport" />
 
@@ -103,6 +105,7 @@ Sai填空
                         // 替换所有非中文字符为下划线（＿），但保留 <b> 和 </b>
                         a = a.replace(/<b>|<\/b>/g, ""); // 替换 <b> 和 </b> 为空字符
                         a = a.replace(/[^\u4e00-\u9fa5、；，。！？：—“”（）《》【】]+?/g, "_"); // 替换其他非中文字符为下划线（＿）
+
                         // 替换所有中文字符为下划线（＿）
                         let b = a.replace(/[\u4e00-\u9fa5、；，。！？：—“”（）《》【】]+?/g, "＿");
                         // 将处理后的内容重新赋值回去
@@ -144,18 +147,21 @@ Sai填空
             }
 
         </script>
+        <div style='font-family: Arial; font-size: 12px;float:left;color:#A2886D'>《{{《》}}》
     </div>
 </div>
 ```
 
-> 文本处理原理
+> **文本处理原理**
 >
+> 使用 `// 显示原始 HTML 内容（调试用）` 可显示转义后的html代码，如
+> 
 > ```html
-> <font color="#ff0000">入场条件</font>：<font color="#d8b0b0">高2/低2的 <b>实体/影线</b> 突破信号K的极值点</font>
+><font color="#ff0000">入场条件</font>：<font color="#d8b0b0">高2/低2的 <b>实体/影线</b> 突破信号K的极值点</font>
 > ```
 >
 > 1. `step1()` 
->
+> 
 >    > 查找并替换颜色为 `#d8b0b0` 的文本
 >    >
 >    > ```html
@@ -168,21 +174,21 @@ Sai填空
 >    > * 执行完后，文本变成了
 >    >
 >    >   ```html
->    >   <font color="#ff0000">入场条件</font>：<y id="keyy" onclick="switchh(id)">高2/低2的 <b>实体/影线</b> 突破信号K的极值点</y>
+>   >   <font color="#ff0000">入场条件</font>：<y id="keyy" onclick="switchh(id)">高2/低2的 <b>实体/影线</b> 突破信号K的极值点</y>
 >    >   ```
 >
 > 2. `setn()` 
 >
 >    1. 给每个 `<y>` 标签分配唯一 ID
->
+> 
 >       > ```
 >       > txt = document.getElementById("secstem").innerHTML.replace(/keyy\"/, idd + '"');
 >       > ```
->       >
+>      >
 >       > - 假设只有一个 `<y>` 标签，`setn()` 会给它分配一个唯一的 ID，比如 `keyy1`
 >
 >    2. 控制显示与隐藏
->
+> 
 >       > * 如果ID是偶数（如 `keyy2`），则标签开始时会被隐藏
 >       >
 >       > * 如果ID是奇数（如 `keyy1`），则标签开始时会显示，并且会将其中的中文和非中文字符替换为下划线 `＿`
@@ -190,7 +196,7 @@ Sai填空
 >       > * 执行完后，文本变成了
 >       >
 >       >   ```html
->       >   <font color="#ff0000">入场条件</font>：<y id="keyy1" onclick="switchh(id)">＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿</y>
+>      >   <font color="#ff0000">入场条件</font>：<y id="keyy1" onclick="switchh(id)">＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿</y>
 >       >   ```
 >
 > 3. 点击某个 `<y>` 标签，执行`switchh()` 
@@ -204,143 +210,230 @@ Sai填空
 >       > * 20 毫秒后，`keyy1` 会被完全隐藏，同时对应的下一个标签 `keyy2` 会显示出来
 >
 >    3. 执行完后，文本变成了
->
+> 
 >       ```html
->       <font color="#ff0000">入场条件</font>：<y id="keyy2" class="cloze" onclick="switchh(id)">高2/低2的 实体/影线 突破信号K的极值点</y>
+>      <font color="#ff0000">入场条件</font>：<y id="keyy2" class="cloze" onclick="switchh(id)">高2/低2的 实体/影线 突破信号K的极值点</y>
 >       ```
 >
 >       `keyy2` 标签显示了正确答案，原先的下划线替换部分消失，填空题的答案展示出来
 >
-> 
->
-> 1. 好的，接下来我将通过一个具体的例子来详细解释这段代码如何处理文本。假设我们有这样一个原始文本：
->
->    ```
->    html
->    
->    
->    复制代码
->    <font color="#ff0000">入场条件</font>：<font color="#d8b0b0">高2/低2的 <b>实体/影线</b> 突破信号K的极值点</font>
->    ```
->
->    这个文本中，我们有 `<font>` 标签和 `<b>` 标签，目标是对其中的特定颜色（`#d8b0b0`）和加粗（`<b>`）标签进行处理，最终渲染出来的效果是根据标签进行填空和交互。下面详细解释这个过程。
->
->    ### 步骤 1: 页面加载后初始化
->
->    1. 页面加载后，浏览器会读取 HTML 内容，并渲染页面。
->
->    2. 假设这段代码会被渲染为：
->
->       ```
->       html
->       
->       
->       复制代码
->       <font color="#ff0000">入场条件</font>：<font color="#d8b0b0">高2/低2的 <b>实体/影线</b> 突破信号K的极值点</font>
->       ```
->
->       其中，红色文本 `<font color="#ff0000">入场条件</font>` 和粉色文本 `<font color="#d8b0b0">高2/低2的 <b>实体/影线</b> 突破信号K的极值点</font>` 被浏览器正确显示。
->
->    ### 步骤 2: `step1()` 函数执行
->
->    当 `step1()` 函数执行时，我们会对文本进行一些修改。具体来说，函数做了以下几件事：
->
->    1. **查找并替换颜色为 `#d8b0b0` 的文本**：
->
->       - `txt = txt.replace(/<font color="#d8b0b0">(.+?)<\/font>/g, '<y id="keyy" onclick="switchh(id)">$1<\/y>');`
->
->       这行代码会把所有颜色为 `#d8b0b0` 的文本（即 `高2/低2的 <b>实体/影线</b> 突破信号K的极值点`）用 `<y id="keyy" onclick="switchh(id)">...</y>` 标签包裹起来。这里使用 `y` 标签是为了后续可以通过点击交互来切换填空。
->
->       执行完后，文本变成了：
->
->       ```
->       html
->       
->       
->       复制代码
->       <font color="#ff0000">入场条件</font>：<y id="keyy" onclick="switchh(id)">高2/低2的 <b>实体/影线</b> 突破信号K的极值点</y>
->       ```
->
->    2. **防止 `<y>` 标签被错误处理**：
->
->       - `txt = txt.replace(/<y.+?\/y>/g, "$&$&");`
->
->       这行代码用于确保在替换过程中，已经包裹在 `<y>` 标签中的文本不会被错误地修改或合并。这一步对 `<y>` 标签进行“安全处理”，确保其内容保持不变。
->
->    3. **更新页面内容**：
->
->       - 最终，处理后的文本会更新回 `secstem` 元素中，形成一个可以交互的文本，页面上显示为：
->
->       ```
->       html
->       
->       
->       复制代码
->       <font color="#ff0000">入场条件</font>：<y id="keyy" onclick="switchh(id)">高2/低2的 <b>实体/影线</b> 突破信号K的极值点</y>
->       ```
->
->    ### 步骤 3: `setn()` 函数执行
->
->    接着，`setn()` 函数会进一步处理 `<y>` 标签，给每个标签分配唯一的 ID，并控制其显示与隐藏：
->
->    1. **给每个 `<y>` 标签分配唯一 ID**：
->
->       - 假设我们只有一个 `<y>` 标签，`setn()` 会给它分配一个唯一的 ID，比如 `keyy1`。所以 `txt = document.getElementById("secstem").innerHTML.replace(/keyy\"/, idd + '"');` 这行代码会将 `keyy` 替换为 `keyy1`。
->
->       最终，页面中的 `<y>` 标签变成：
->
->       ```
->       html
->       
->       
->       复制代码
->       <font color="#ff0000">入场条件</font>：<y id="keyy1" onclick="switchh(id)">高2/低2的 <b>实体/影线</b> 突破信号K的极值点</y>
->       ```
->
->    2. **控制显示与隐藏**：
->
->       - 根据 ID 的奇偶性，如果是偶数（比如 `keyy2`），则标签开始时会被隐藏；如果是奇数（比如 `keyy1`），则标签会显示，并且会将其中的非中文字符（如 `实体/影线` 中的斜杠）替换为下划线 `＿`。
->
->       处理后，文本内容变成了：
->
->       ```
->       html
->       
->       
->       复制代码
->       <font color="#ff0000">入场条件</font>：<y id="keyy1" onclick="switchh(id)">高2/低2的 ＿实体＿影线 ＿ 突破信号K的极值点</y>
->       ```
->
->       这样填空部分会变成下划线，表示填空题的部分。
->
->    ### 步骤 4: 点击 `<y>` 标签时触发 `switchh()` 函数
->
->    当用户点击某个 `<y>` 标签时，`switchh()` 函数会执行：
->
->    1. **隐藏当前标签**：
->
->       - 用户点击 `keyy1` 标签后，它会被隐藏，`hiddendelay` 类会被添加到该标签上，执行后变为隐藏状态。
->
->    2. **显示下一个标签**：
->
->       - 在 20 毫秒后，`keyy1` 会被完全隐藏，同时对应的下一个标签 `keyy2` 会显示出来，用户可以看到答案。
->
->       这时页面内容可能变成：
->
->       ```
->       html
->       
->       
->       复制代码
->       <font color="#ff0000">入场条件</font>：<y id="keyy2" class="cloze" onclick="switchh(id)">高2/低2的 实体/影线 突破信号K的极值点</y>
->       ```
->
->       其中，`keyy2` 标签显示了正确答案，原先的下划线替换部分消失，填空题的答案展示出来。
->
->    ### 总结：
->
->    整个过程是一个从显示带有填空的文本到用户点击交互，逐步揭示答案的过程。具体的步骤包括：
->
->    1. 对 `<font color="#d8b0b0">` 标签中的文本包裹成 `<y>` 标签。
->    2. 将其中的非中文字符替换成下划线表示填空。
->    3. 用户点击填空部分时，切换显示答案。
+
+**反面**
+
+```html
+<meta content="initial-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport" />
+
+<div class=bg>
+    <div class=bg2>
+        <div style="margin:16px 0 0 0"></div>
+        <div id="div2" style="display:block">
+            <div id="blank" class="section2">
+                <div class="mbooks-highlight-txt">{{阅读/填空正文}}</div>
+            </div>
+        </div>
+        <div style='font-family: Arial; font-size: 12px;float:left;color:#A2886D'>《{{《》}}》
+    </div>
+    <script type="text/javascript">
+        divs = document.querySelectorAll('#blank');
+        [].forEach.call(divs, function (div) {
+            div.innerHTML = div.innerHTML
+                .replace(/(<br>)(<br>)/g, "$1<div class=\"divider\"></div>$2")
+                .replace(/(<div>|<br>)(#)(.*)/g, "");
+        });
+    </script>
+    </div>
+</div>
+```
+
+样式
+
+```css
+<style></style>
+
+<style>
+/* --- 正面背面默认字体、字号、对齐、字色、背景色、行高 --- */
+    .card {
+        margin: 10px;
+        font-family: avenir next, helvetica, arial, sans-serif;
+        font-size: 20px;
+        text-align: left;
+        color: #336633;
+        background-color: #e9ebee;
+        line-height: 128%;
+    }
+    
+    .mbooks-highlight-txt {
+        margin: 8px 12px 7px;
+        display: block;
+        font-size: 0.9em;
+        line-height: 165%;
+        text-align: left;
+    }
+
+    ::-webkit-scrollbar {
+        display: none
+    }
+    body {
+        transform: none !important;
+    }
+    .bg {
+        z-index: -1;
+        background-image: url(_bg_texture.png);
+        background-attachment: fixed;
+        position: fixed;
+        top: 0px;
+        left: 0px;
+        bottom: 0px;
+        right: 0px;
+        width: 100%;
+        height: 100%;
+        overflow-y: scroll;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .bg::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .bg2 {
+        margin: 0.6em 0.65em
+    }
+    
+    .ipad .bg2 {
+        margin: 0.6em 0.65em
+    }
+    
+    .android .bg2 {
+        margin: 0.6em 0.5em
+    }
+    
+    .hide {
+        color: #fff;
+    }
+    
+    .nightMode .hide {
+        color: #222;
+    }
+    
+    .hidden {
+        display: none
+    }
+    
+    #question span {
+        display: inline-block
+    }
+    /* --------- 字体样式 --------- */
+    
+    /* --- 背面挖空文字 --- */
+
+    b {
+        font-size: 20px;
+    }
+
+    
+    .cloze {
+        /* --- 正面挖空文字颜色 --- */
+        color: #990033;
+        font-size: 1.05em;
+        margin: 0 2px;
+        text-decoration: underline;
+        font-family: avenir next, kt;
+    }
+    
+    .color {
+        /* --- 正面挖空横线颜色 --- */
+        color: #D8B0B0;
+        font-size: 1.05em;
+        text-decoration: underline;
+        margin: 0 2px;
+        font-family: avenir next, kt;
+        display: inline;
+        -webkit-animation-name: fadeinn;
+        -webkit-animation-duration: 0.03s;
+        -webkit-animation-timing-fuction: linear;
+    }
+    
+    .hiddendelay {
+        color: #338eca;
+        font-size: 1.05em;
+        text-decoration: underline;
+        margin: 0 2px;
+        font-family: avenir next, kt;
+        -webkit-animation-name: fadeoutt;
+        -webkit-animation-duration: 0.03s;
+        -webkit-animation-timing-fuction: linear;
+    }
+    
+    .br {
+        display: block;
+        content: "";
+        border-bottom: 0.6em solid transparent
+    }
+    
+    .divider {
+        margin: 5px -6px;
+        height: 2px;
+        background-color: #ececec
+    }
+    
+    a:link {
+        color: #007aff
+    }
+    
+    th,
+    tr,
+    td {
+        border-collapse: collapse;
+        border: 1px solid #808080;
+    }
+    
+    #typeans {
+        font-size: 0.85em !important
+    }
+    
+    .ios #typeans {
+        font-size: 1em !important
+    }
+    
+    @font-face {
+        font-family: kt;
+        src: url('_kt.ttf');
+    }
+    
+    @font-face {
+        font-family: times;
+        src: url('_times.ttf');
+    }    
+
+   
+    .win .section-type {
+        display: block
+    }
+    
+    .mac .section-type {
+        display: block
+    }
+        /* --- 正面卡片区域 --- */
+    .section2 {
+				 /* --- 区域边框粗细 --- */
+        border: 1px solid;
+				 /* --- 区域边框颜色 --- */
+        border-color: #fff;
+				 /* --- 区域边框圆角 --- */
+        border-radius: 5px;
+				 /* --- 区域背景色 --- */
+        background-color: rgba(255, 255, 255, 0.85);
+				 /* --- 卡内边框与文字的边距 --- */
+        padding: 10px 12px;
+				 /* --- 以下未知 --- */
+        margin: 5px 0;
+        line-height: 100%;
+        max-width: 828px;
+        margin: 0 auto;
+        box-shadow: #b7d5eb 2px 2px 5px 1px;
+        word-break: break-word;
+    }
+```
+
+
+

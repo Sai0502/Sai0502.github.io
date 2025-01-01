@@ -15,7 +15,7 @@
 
     <style type="text/css">
         /* 隐藏头部的目录 */
-        卧槽，居然没有喝中药。 #main>ul:nth-child(1) {
+        #main>ul:nth-child(1) {
             display: none;
         }
 
@@ -307,6 +307,15 @@
                 depth: 6,                       // 搜索标题的最大程级, 1 - 6
                 noData: '臣妾找不到啊',
             },
+            plugins: [
+                function(hook, vm) {
+                    hook.mounted(function() {
+                        // 确保搜索时记录正文内容
+                        const content = document.body.innerHTML;
+                        // 在这里扩展搜索逻辑
+                    });
+                }
+            ],
             loadSidebar: true,                  // 加载侧边栏
             subMaxLevel: 2,                     // 侧边栏显示文档目录，显示1，2，3级目录
             loadNavbar: true,                   // 加载导航栏

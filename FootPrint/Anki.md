@@ -54,7 +54,7 @@
 > >
 > > 2. `Quick Colour Changing`：修改文本颜色
 > >
-> >    > `Meta`对应`Control键`，`Ctrl`对应`Command键`，`Alt`对应`fn + Option键`
+> >    > `Meta`对应`Control键`，`Ctrl`对应`Command键`，`Alt`对应`Option键`
 > >    >
 > >    > ```bash
 > >    > "keys": [

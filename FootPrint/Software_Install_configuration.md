@@ -61,9 +61,9 @@
 >    ```bash
 >    # 创建 .zshrc 文件
 >    echo >> ~/.zshrc
->    
+>       
 >    open ~/.zshrc
->    
+>       
 >    # 在文件最后添加下面两句
 >    export http_proxy="http://127.0.0.1:8234" export https_proxy="http://127.0.0.1:8234"
 >    ```
@@ -193,14 +193,14 @@
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->     
+>         
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->     
+>         
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 
@@ -332,6 +332,12 @@
 > 1. 安装
 >
 >    > ⌘+⇧+P，输入install package，回车自动安装
+>
+>    > [无法加载 install package](https://www.tangxdou.com/2024/05/24/%E8%A7%A3%E5%86%B3%E6%96%B0%E7%89%88%E6%9C%ACMacOS%E4%B8%8BSublimeText4packagecontrol%E6%97%A0%E6%B3%95%E5%8A%A0%E8%BD%BD%E9%97%AE%E9%A2%98/)，因为新版本的 macos 不支持旧版package control 
+>    >
+>    > 1. [下载 beta 版本的 package control 插件](https://github.com/wbond/package_control/releases/download/4.0.0-beta8/Package.Control.sublime-package)，下载后将`Package.Control.sublime-package`改名为`Package Control.sublime-package`（去掉.加个空格）
+>    > 2. Settings - Browser packages，找到同级目录Installed Packages，将`Package Control.sublime-package`拖入该目录
+>    > 3. 重启 sublime
 >
 > 2. 解决乱码问题
 >

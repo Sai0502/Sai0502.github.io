@@ -397,15 +397,10 @@
 
 ##### Mac 修改文件创建时间
 
-> `touch -mt YYYYMMDDhhmm`
-> 示例
->
 > ```bash
-> 1. 在Terminal中输入 touch -mt 20160101  
-> 2. 将/Users/will/Downloads/1.png拖入Terminal中
-> 3. Terminal会显示 touch -mt 20160101 /Users/will/Downloads/123.png
-> 4. 回车执行即可
-> 注：改成当天 touch -m 文件名
+> 修改时间改为当天 touch -m 文件名
+> 访问时间改为当天 touch -a 文件名
+> 同时把访问时间 + 修改时间改为当天 touch -am 文件名
 > ```
 
 ##### PDF增加大纲书签

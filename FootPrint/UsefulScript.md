@@ -67,12 +67,12 @@
    >   python
    >     import subprocess  # 导入subprocess模块，用于执行系统命令
    >     import whisper  # 导入whisper模块，用于语音转文字
-   >       
+   >         
    >     # 定义YouTube视频的URL
    >     youtube_url = "https://www.youtube.com/watch?v=qZ3T5hunOuQ"
    >     # 定义输出的音频文件名
    >     output_audio = "audio.m4a"
-   >       
+   >         
    >     # 使用yt-dlp下载音频并提取为m4a格式，设置为低等品质
    >     # -f bestaudio: 选择最佳音频质量
    >     # --extract-audio: 只提取音频
@@ -94,17 +94,17 @@
    >             youtube_url,
    >         ]
    >     )
-   >       
+   >         
    >     # 加载Whisper模型
    >     # "base" 是模型的大小，可以根据需要选择 "tiny", "base", "small", "medium", "large"
    >     model = whisper.load_model("base")
-   >       
+   >         
    >     # 使用Whisper模型读取音频文件并进行语音转文字
    >     result = model.transcribe(output_audio)
-   >       
+   >         
    >     # 打印转换后的文字
    >     print(result["text"])
-   >       
+   >         
    >     # 将转换后的文字保存到文本文件中
    >     # with open("transcription.txt", "w") as f:
    >     #     f.write(result["text"])
@@ -208,13 +208,13 @@
    >
    >   ```python
    >   import os
-   >       
+   >         
    >   Voice = "zh-CN-YunjianNeural"
    >   Rate = "+0%"
    >   Volume = "+0%"
-   >       
+   >         
    >   Handle_Folder = "/Users/jiangsai/Desktop/1"
-   >       
+   >         
    >   # 转换目录内所有单个txt文件为单个mp3音频
    >   for Folder_Path, SonFolders, FileNames in os.walk(Handle_Folder):
    >       for FileName in FileNames:
@@ -444,25 +444,80 @@
 
 7. 定时提醒
 
-   ```python
-   # 时间为15的倍数时铃声提醒 1:15,1:30,1:45
-   import time
-   import os
-   
-   def play_audio():
-       # 使用 afplay 播放音频
-       os.system('afplay /Users/sai/Downloads/冥想-运动/叮咚.MP3') 
-   
-   while True:
-       current_time = time.localtime()
-       minutes = current_time.tm_min
-   
-       if minutes % 15 == 0:
-           print(f"当前时间: {time.strftime('%H:%M', current_time)} - 播放音频")
-           play_audio()
-           time.sleep(60)
-   
-       time.sleep(1)
-   ```
+   1. 每15分钟提醒1次
+
+      > ```python
+      > # 时间为15的倍数时铃声提醒 1:15,1:30,1:45
+      > import time
+      > import os
+      > 
+      > def play_audio():
+      >     # 使用 afplay 播放音频
+      >     os.system('afplay /Users/sai/Downloads/冥想-运动/叮咚.MP3') 
+      > 
+      > while True:
+      >     current_time = time.localtime()
+      >     minutes = current_time.tm_min
+      > 
+      >     if minutes % 15 == 0:
+      >         print(f"当前时间: {time.strftime('%H:%M', current_time)} - 播放音频")
+      >         play_audio()
+      >         time.sleep(60)
+      > 
+      >     time.sleep(1)
+      > ```
+      >
+      > * 更换系统音效
+      >
+      >   > macOS 内置音效路径是：`/System/Library/Sounds/`
+      >   >
+      >   > 可改成：`afplay /System/Library/Sounds/Ping.aiff`
+      >   >
+      >   > 改成任一音频：`subprocess.run(["afplay", " ~/Desktop/提示音.mp3"])`
+
+   2. 每5分钟提醒1次，并做出桌面图标
+
+      > ```python
+      > import time
+      > import subprocess
+      > from datetime import datetime
+      > 
+      > def send_notification(title, message):
+      >     subprocess.run([
+      >         "osascript", "-e",
+      >         f'display notification "{message}" with title "{title}"'
+      >     ])
+      > def play_system_sound():
+      >     # 播放系统提示音（Sosumi）
+      >     subprocess.run([
+      >         "afplay", "/System/Library/Sounds/Sosumi.aiff"
+      >     ])
+      > 
+      > def next_5_minute():
+      >     now = datetime.now()
+      >     # 计算当前时间到下一个5分钟倍数的时间
+      >     minutes_to_next_5 = 5 - now.minute % 5
+      >     seconds_to_next_5 = minutes_to_next_5 * 60 - now.second
+      >     return seconds_to_next_5
+      > 
+      > while True:
+      >     # 计算到下一个5分钟倍数的时间
+      >     wait_time = next_5_minute()
+      >     time.sleep(wait_time)
+      >     play_system_sound()
+      >     send_notification("5分钟了", "看一眼盘面")
+      >     # 等待到下一个5分钟倍数
+      >     time.sleep(30)
+      > ```
+      >
+      > ![image-20250409161602383](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20250409161602383.png)
+      >
+      > 1. 打开 **Automator** → **新建文稿** → 选择 **应用程序** → 左侧搜索框输入 `Shell`，双击「运行 Shell 脚本」 → 替换默认内容：`python3 ~/Desktop/reminder.py` 
+      > 2. 点击左上角「文件」→「存储」，保存到桌面，比如叫 `5分钟提醒.app`
+      > 3. 双击这个 `.app`，它就会启动你的提醒程序了
+      >
+      > **杀掉程序**
+      >
+      > * **活动监视器**：搜索框输：`python`
 
    

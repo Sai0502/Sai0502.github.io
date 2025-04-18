@@ -40,7 +40,7 @@
 > defaults write com.apple.finder _FXShowPosixPathInTitle -bool YES
 > ```
 
-##### VPN开启后Chrome可翻墙，终端不行
+VPN开启后Chrome可翻墙，终端不行
 
 > getcloud代理地址：http://127.0.0.1:8234
 >
@@ -61,9 +61,9 @@
 >    ```bash
 >    # 创建 .zshrc 文件
 >    echo >> ~/.zshrc
->       
+>                   
 >    open ~/.zshrc
->       
+>                   
 >    # 在文件最后添加下面两句
 >    export http_proxy="http://127.0.0.1:8234" export https_proxy="http://127.0.0.1:8234"
 >    ```
@@ -193,14 +193,14 @@
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->         
+>                         
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->         
+>                         
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 
@@ -442,3 +442,26 @@
 >    3. 全屏右滑宏：control ⌃ + ArrowRight →
 >
 > 4. 开启板载内存模式 - 点击 放入1 默认 - 选择桌面 默认 - 等待保存完成
+
+##### Mac技巧
+
+> 1. 鼠标缩放图片：Option + 鼠标滚轮（若缩放过快，则在mos中将该app设为例外）
+> 2. 鼠标左右滚动图片：Shift + 鼠标滚轮
+
+##### OBS
+
+> [参考](https://www.bilibili.com/video/BV1PYASeLEb6)
+>
+> * 基础设置
+>
+>   ![image-20250315222703689](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20250315222703689.png)
+>
+>   ![image-20250319003142590](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20250319003142590.png)
+>
+> * 去除环境音
+>
+>   ![image-20250315230635808](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20250315230635808.png)
+>   
+> * 画质提升
+>
+>   ![image-20250319003024248](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20250319003024248.png)

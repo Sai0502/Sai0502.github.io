@@ -67,12 +67,12 @@
    >   python
    >     import subprocess  # 导入subprocess模块，用于执行系统命令
    >     import whisper  # 导入whisper模块，用于语音转文字
-   >         
+   >                 
    >     # 定义YouTube视频的URL
    >     youtube_url = "https://www.youtube.com/watch?v=qZ3T5hunOuQ"
    >     # 定义输出的音频文件名
    >     output_audio = "audio.m4a"
-   >         
+   >                 
    >     # 使用yt-dlp下载音频并提取为m4a格式，设置为低等品质
    >     # -f bestaudio: 选择最佳音频质量
    >     # --extract-audio: 只提取音频
@@ -94,17 +94,17 @@
    >             youtube_url,
    >         ]
    >     )
-   >         
+   >                 
    >     # 加载Whisper模型
    >     # "base" 是模型的大小，可以根据需要选择 "tiny", "base", "small", "medium", "large"
    >     model = whisper.load_model("base")
-   >         
+   >                 
    >     # 使用Whisper模型读取音频文件并进行语音转文字
    >     result = model.transcribe(output_audio)
-   >         
+   >                 
    >     # 打印转换后的文字
    >     print(result["text"])
-   >         
+   >                 
    >     # 将转换后的文字保存到文本文件中
    >     # with open("transcription.txt", "w") as f:
    >     #     f.write(result["text"])
@@ -208,13 +208,13 @@
    >
    >   ```python
    >   import os
-   >         
+   >                 
    >   Voice = "zh-CN-YunjianNeural"
    >   Rate = "+0%"
    >   Volume = "+0%"
-   >         
+   >                 
    >   Handle_Folder = "/Users/jiangsai/Desktop/1"
-   >         
+   >                 
    >   # 转换目录内所有单个txt文件为单个mp3音频
    >   for Folder_Path, SonFolders, FileNames in os.walk(Handle_Folder):
    >       for FileName in FileNames:
@@ -483,41 +483,169 @@
       > from datetime import datetime
       > 
       > def send_notification(title, message):
-      >     subprocess.run([
-      >         "osascript", "-e",
-      >         f'display notification "{message}" with title "{title}"'
-      >     ])
+      >  subprocess.run([
+      >      "osascript", "-e",
+      >      f'display notification "{message}" with title "{title}"'
+      >  ])
       > def play_system_sound():
-      >     # 播放系统提示音（Sosumi）
-      >     subprocess.run([
-      >         "afplay", "/System/Library/Sounds/Sosumi.aiff"
-      >     ])
+      >  # 播放系统提示音（Sosumi）
+      >  subprocess.run([
+      >      "afplay", "/System/Library/Sounds/Sosumi.aiff"
+      >  ])
       > 
       > def next_5_minute():
-      >     now = datetime.now()
-      >     # 计算当前时间到下一个5分钟倍数的时间
-      >     minutes_to_next_5 = 5 - now.minute % 5
-      >     seconds_to_next_5 = minutes_to_next_5 * 60 - now.second
-      >     return seconds_to_next_5
+      >  now = datetime.now()
+      >  # 计算当前时间到下一个5分钟倍数的时间
+      >  minutes_to_next_5 = 5 - now.minute % 5
+      >  seconds_to_next_5 = minutes_to_next_5 * 60 - now.second
+      >  return seconds_to_next_5
       > 
       > while True:
-      >     # 计算到下一个5分钟倍数的时间
-      >     wait_time = next_5_minute()
-      >     time.sleep(wait_time)
-      >     play_system_sound()
-      >     send_notification("5分钟了", "看一眼盘面")
-      >     # 等待到下一个5分钟倍数
-      >     time.sleep(30)
+      >  # 计算到下一个5分钟倍数的时间
+      >  wait_time = next_5_minute()
+      >  time.sleep(wait_time)
+      >  play_system_sound()
+      >  send_notification("5分钟了", "看一眼盘面")
+      >  # 等待到下一个5分钟倍数
+      >  time.sleep(30)
       > ```
       >
       > ![image-20250409161602383](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20250409161602383.png)
       >
       > 1. 打开 **Automator** → **新建文稿** → 选择 **应用程序** → 左侧搜索框输入 `Shell`，双击「运行 Shell 脚本」 → 替换默认内容：`python3 ~/Desktop/reminder.py` 
+      >
+      >    > 如果报错可以指定Python版本
+      >    >
+      >    > ```bash
+      >    > which python3
+      >    > /opt/anaconda3/bin/python3
+      >    > ```
+      >    >
+      >    > 「 Shell 脚本」 替换成
+      >    >
+      >    > `/opt/anaconda3/bin/python3 ~/Desktop/reminder.py`
+      >
       > 2. 点击左上角「文件」→「存储」，保存到桌面，比如叫 `5分钟提醒.app`
+      >
       > 3. 双击这个 `.app`，它就会启动你的提醒程序了
       >
       > **杀掉程序**
       >
       > * **活动监视器**：搜索框输：`python`
-
+   
+   3. 每5分钟提醒1次，30分钟语音报时，并做出桌面图标
+   
+      > 1. 程序主逻辑
+      >
+      >    > ```python
+      >    > # 定时提醒App
+      >    > # 参数1：每隔半小时语音报时 python reminder.py 1
+      >    > # 参数2：每隔5分钟铃声提醒 + 每隔半小时语音报时 python reminder.py 2
+      >    > # 安装依赖：pip install edge-tts psutil
+      >    > 
+      >    > import os
+      >    > import sys
+      >    > import subprocess
+      >    > import time
+      >    > from datetime import datetime
+      >    > import asyncio
+      >    > 
+      >    > # 中文数字映射
+      >    > chinese_nums = {
+      >    >     0: '零', 1: '一', 2: '二', 3: '三', 4: '四',
+      >    >     5: '五', 6: '六', 7: '七', 8: '八', 9: '九', 10: '十'
+      >    > }
+      >    > 
+      >    > def num_to_chinese(n):
+      >    >     if n < 10:
+      >    >         return chinese_nums[n]
+      >    >     elif n == 10:
+      >    >         return '十'
+      >    >     elif n < 20:
+      >    >         return '十' + chinese_nums[n % 10]
+      >    >     else:
+      >    >         return chinese_nums[n // 10] + '十' + (chinese_nums[n % 10] if n % 10 != 0 else '')
+      >    > 
+      >    > def get_chinese_time():
+      >    >     now = datetime.now()
+      >    >     hour_ch = num_to_chinese(now.hour)
+      >    >     minute_ch = num_to_chinese(now.minute) if now.minute != 0 else '整'
+      >    >     return f"{hour_ch}点{minute_ch}"
+      >    > 
+      >    > async def speak(text):
+      >    >     from edge_tts import Communicate
+      >    >     communicate = Communicate(text, voice="zh-CN-XiaoxiaoNeural")
+      >    >     await communicate.save("output.mp3")
+      >    >     os.system("afplay output.mp3")
+      >    > 
+      >    > def send_notification(title, message):
+      >    >     subprocess.run([
+      >    >         "osascript", "-e",
+      >    >         f'display notification "{message}" with title "{title}"'
+      >    >     ])
+      >    > 
+      >    > def play_system_sound():
+      >    >     subprocess.run(["afplay", "/System/Library/Sounds/Sosumi.aiff"])
+      >    > 
+      >    > def main_loop(mode):
+      >    >     asyncio.run(speak("程序已启动"))
+      >    >     already_triggered = None
+      >    >     while True:
+      >    >         now = datetime.now()
+      >    >         key = f"{now.hour}:{now.minute}"
+      >    >         if now.second == 0 and key != already_triggered:
+      >    >             if now.minute in [0, 30]:
+      >    >                 ch_time = get_chinese_time()
+      >    >                 asyncio.run(speak(f"{ch_time}"))
+      >    >             if mode == "2" and now.minute % 5 == 0 and now.minute not in [0, 30]:
+      >    >                 play_system_sound()
+      >    >                 send_notification("5分钟了", "看一眼盘面")
+      >    >             already_triggered = key
+      >    >         time.sleep(1)
+      >    > 
+      >    > if __name__ == "__main__":
+      >    >     if len(sys.argv) != 2 or sys.argv[1] not in ["1", "2"]:
+      >    >         send_notification("运行参数错误", "用法：python reminder.py 1 或 2")
+      >    >         asyncio.run(speak("参数错误，参数只能是1或2"))
+      >    >         sys.exit(1)
+      >    > 
+      >    >     mode = sys.argv[1]
+      >    >     main_loop(mode)
+      >    > ```
+      >
+      > 2. 程序开关（双击`.command` 来开关程序）
+      >
+      >    > 第1次双击：启动 reminder.py，并记录 lock 文件
+      >    >
+      >    > 第2次双击：发现 lock 文件和 PID → 直接 kill
+      >    >
+      >    > ```bash
+      >    > #!/bin/bash
+      >    > 
+      >    > LOCK_FILE="$HOME/.reminder.lock"
+      >    > 
+      >    > # 获取当前 reminder.py 是否在运行
+      >    > RUNNING_PID=$(pgrep -f "reminder.py")
+      >    > 
+      >    > if [ -f "$LOCK_FILE" ] && [ -n "$RUNNING_PID" ]; then
+      >    >     # 已运行，关闭它
+      >    >     kill "$RUNNING_PID"
+      >    >     rm -f "$LOCK_FILE"
+      >    >     osascript -e 'display notification "程序已关闭" with title "提醒助手"'
+      >    > else
+      >    >     # 没运行，启动它（放后台）
+      >    >     /opt/anaconda3/bin/python3 "$HOME/Downloads/Python脚本/reminder.py" 1 &
+      >    >     echo $! > "$LOCK_FILE"
+      >    >     osascript -e 'display notification "程序已启动" with title "提醒助手"'
+      >    > fi
+      >    > 
+      >    > exit 0
+      >    > ```
+      >    >
+      >    > 设置执行权限
+      >    >
+      >    > ```bash
+      >    > chmod +x ~/Downloads/reminder_toggle.command
+      >    > ```
+   
    

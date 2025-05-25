@@ -1018,15 +1018,15 @@ if __name__ == "__main__":
       1. 下载m3u8到本地：`camera_out_high.m3u8`
       2. `ffmpeg -protocol_whitelist "file,http,https,tcp,tls" -i 'camera_out_low.m3u8'  -c copy OUTPUT.mp4`
 
-#### 3. 截取视频
+#### 3. 切割视频
 
 ```bash
 # 第1种方法：截取第6分钟15秒 - 第11分钟25秒之间的视频，共截取时长为5分10秒的片段
-# 特点：分割精准，但可能采不到关键帧，开头出现黑屏
+# 特点：切割精准，但可能采不到关键帧，开头出现黑屏
 ffmpeg -i input.mp4 -ss 00:06:15 -to 00:11:25 -c copy output1.mp4
 
-# 第2种方法，截取第6分钟15秒 - 第11分钟25秒之间的视频，共截取时长为5分10秒的片段
-# 特点：分割不够精准，但开头没有黑屏
+# 第2种方法，切割第6分钟15秒 - 第11分钟25秒之间的视频，共截取时长为5分10秒的片段
+# 特点：切割不够精准，但开头没有黑屏
 ffmpeg -ss 00:06:15 -to 00:11:25 -accurate_seek -i input.mp4 -codec copy -avoid_negative_ts 1 output2.mp4
 
 # 第3种方法，从第6分钟15秒开始，共截取时长为2分25秒的片段

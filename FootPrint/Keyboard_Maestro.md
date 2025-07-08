@@ -153,32 +153,32 @@
    >    
    >    ```
    >    #!/usr/bin/python3
-   >                
+   >                   
    >    # -*- coding: utf-8 -*-
-   >                
+   >                   
    >    # encoding=utf8
-   >                
+   >                   
    >    from aip import AipOcr
    >    import sys,io
    >    sys.stdout=io.TextIOWrapper(sys.stdout.buffer,encoding='utf8')
-   >                
+   >                   
    >    """ 你的 APPID AK SK """
    >    APP_ID = '34338402'
    >    API_KEY = 'GVeTGTZdRIiH3AphNQtumCk4'
    >    SECRET_KEY = 'csTzqbvYHbj8XGMnIgCAOtN7Gq1Ra58H'
-   >                
+   >                   
    >    client = AipOcr(APP_ID, API_KEY, SECRET_KEY)
-   >                
+   >                   
    >    def get_file_content(file):
    >     with open(file, 'rb') as fp:
    >         return fp.read()
-   >                
+   >                   
    >    def img_to_str(image_path):
    >     image = get_file_content(image_path)
    >     result = client.basicGeneral(image)
    >     if 'words_result' in result:
    >         return u'\n'.join([w['words'] for w in result['words_result']])
-   >                
+   >                   
    >    print(img_to_str(image_path='/Users/jiangsai/Downloads/1.png'))
    >    ```
    
@@ -196,11 +196,11 @@
       [Keyboard Maestro: 设置特定应用内的宏](https://www.bilibili.com/video/BV125411s79e/?spm_id_from=333.337.search-card.all.click&vd_source=052b07ad0190d9dabdf1d78fda0168a7)
       
       1. Groups列：创建一个group：Sai Chrome Group，并设置Sai Chrome Group仅在Chrome中生效
-         
+      
          ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202306022331425.png)
       
       2. 已有快捷键替换
-         
+      
          1. 下载内容页宏
             
             > 1. Macros列创建宏：Downloads
@@ -208,14 +208,21 @@
             > 3. 通过「type a keystroke」模拟实际快捷键：⌥ + ⌘ + L
       
       3. Chrome没有快捷键，用Keyboard Maestro创造快捷键宏
+      
+         > 1. Macros列创建宏：Extensions
+         > 2. 设置下载内容快捷键：⌘ + E
+         > 3. 通过「select or show a Menu item」模拟点击顶部菜单栏-窗口-扩展程序
+         >
+         > ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202306022340183.png)
+      
+      4. chrome-tradingview单步回放
+      
+         > 1. 点击Tab键激活/取消这个功能
+         > 2. 激活后，点击Space键替代 ⇧ + →，来执行单步回放
+         >
+         > ![image-20250609133007796](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20250609133007796.png)
+      
          
-         1. 扩展程序宏
-            
-            > 1. Macros列创建宏：Extensions
-            > 2. 设置下载内容快捷键：⌘ + E
-            > 3. 通过「select or show a Menu item」模拟点击顶部菜单栏-窗口-扩展程序
-            
-            ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202306022340183.png)
 * 断点调试
 
 ​    ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202306032334153.png)

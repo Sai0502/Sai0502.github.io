@@ -112,7 +112,7 @@ def generate_csv_file(directory, output_csv_path):
 
 if __name__ == "__main__":
     # 指定要扫描的目录
-    directory_to_scan = "/Users/jiangsai/Downloads/精品班 PremumClass001"
+    directory_to_scan = "/Users/jiangsai/Downloads/萌芽班 Beginner  Class/Smart Money Concept 聪明钱"
     
     # 生成 Markdown 表格
     markdown_table = generate_markdown_table(directory_to_scan)
@@ -121,9 +121,9 @@ if __name__ == "__main__":
     print(markdown_table)
     
     # 保存 Markdown 表格到文件
-    markdown_output_path = os.path.join(directory_to_scan, "video_durations.md")
-    with open(markdown_output_path, "w") as md_file:
-        md_file.write(markdown_table)
+    # markdown_output_path = os.path.join(directory_to_scan, "video_durations.md")
+    # with open(markdown_output_path, "w") as md_file:
+    #     md_file.write(markdown_table)
     
     # 生成 CSV 文件
     csv_output_path = os.path.join(directory_to_scan, "video_durations.csv")

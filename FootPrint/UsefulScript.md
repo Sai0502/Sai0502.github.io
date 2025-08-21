@@ -1,4 +1,456 @@
-1. （新模型）语音转文字_模型whisper-ctranslate2
+1. 有些视频用faster_whisper转录效果不好，直接上传YouTube，公开范围选【不公开列出】，然后下载srt文件，再用下述脚本处理
+
+   ```python
+   import re
+   import os
+   
+   SENT_END_CHARS = set(".?!。？！")
+   
+   def format_timestamp(seconds: float) -> str:
+       h = int(seconds // 3600)
+       m = int((seconds % 3600) // 60)
+       s = int(seconds % 60)
+       ms = int(round((seconds - int(seconds)) * 1000))
+       return f"{h:02}:{m:02}:{s:02},{ms:03}"
+   
+   def parse_timestamp(ts: str) -> float:
+       h, m, rest = ts.split(":")
+       s, ms = rest.split(",")
+       return int(h)*3600 + int(m)*60 + int(s) + int(ms)/1000
+   
+   def read_srt(path: str):
+       with open(path, "r", encoding="utf-8") as f:
+           content = f.read().strip()
+       blocks = re.split(r"\n\s*\n", content)
+       entries = []
+       for block in blocks:
+           lines = block.strip().splitlines()
+           if len(lines) >= 3:
+               idx = lines[0].strip()
+               times = lines[1].split("-->")
+               start = parse_timestamp(times[0].strip())
+               end = parse_timestamp(times[1].strip())
+               text = " ".join(lines[2:]).strip()
+               entries.append((start, end, text))
+       return entries
+   
+   def write_srt(entries, path: str):
+       with open(path, "w", encoding="utf-8") as f:
+           for i, (start, end, text) in enumerate(entries, start=1):
+               f.write(f"{i}\n")
+               f.write(f"{format_timestamp(start)} --> {format_timestamp(end)}\n")
+               f.write(text + "\n\n")
+   
+   def split_sentence_with_time(start, end, text):
+       """把一句里多个结束符拆成多句，并按单词数分配时间"""
+       parts = re.split(r"([.?!。？！])", text)  # 按结束符切分
+       chunks = []
+       buffer = ""
+       for p in parts:
+           if not p.strip():
+               continue
+           buffer += p
+           if p in SENT_END_CHARS:  # 碰到结束符就输出
+               chunks.append(buffer.strip())
+               buffer = ""
+       if buffer:  # 如果最后还有残余（没有结束符的）
+           chunks.append(buffer.strip())
+   
+       # 时间分配
+       total_duration = end - start
+       total_words = sum(len(c.split()) for c in chunks) or 1
+       avg_word_time = total_duration / total_words
+   
+       result = []
+       cur_start = start
+       for c in chunks:
+           word_count = len(c.split()) or 1
+           cur_end = cur_start + word_count * avg_word_time
+           result.append((cur_start, cur_end, c))
+           cur_start = cur_end
+       return result
+   
+   def merge_sentences(entries):
+       merged = []
+       cache = []
+       for start, end, text in entries:
+           cache.append((start, end, text))
+           if text and text[-1] in SENT_END_CHARS:
+               new_start = cache[0][0]
+               new_end = cache[-1][1]
+               new_text = " ".join([t for _, _, t in cache])
+               merged.extend(split_sentence_with_time(new_start, new_end, new_text))
+               cache = []
+       if cache:
+           new_start = cache[0][0]
+           new_end = cache[-1][1]
+           new_text = " ".join([t for _, _, t in cache])
+           merged.append((new_start, new_end, new_text))
+       return merged
+   
+   def process_file(file_path: str):
+       if not file_path.lower().endswith(".srt"):
+           return
+       try:
+           entries = read_srt(file_path)
+           merged_entries = merge_sentences(entries)
+           dir_name = os.path.dirname(file_path)
+           base, ext = os.path.splitext(os.path.basename(file_path))
+           output_path = os.path.join(dir_name, f"{base}-Merge{ext}")
+           write_srt(merged_entries, output_path)
+           print(f"✅ 处理完成: {output_path}")
+       except Exception as e:
+           print(f"❌ 处理失败 {file_path}: {e}")
+   
+   def process_path(path: str):
+       if os.path.isfile(path):
+           process_file(path)
+       elif os.path.isdir(path):
+           for root, _, files in os.walk(path):
+               for name in files:
+                   process_file(os.path.join(root, name))
+       else:
+           print(f"⚠️ 输入路径无效: {path}")
+   
+   if __name__ == "__main__":
+       # 👉 修改这里的路径，可以是文件或文件夹
+       input_path = "/Users/jiangsai/Downloads/1"
+       process_path(input_path)
+   
+   ```
+
+2. 英文语音转srt，中文语音转txt，一句话不会中断
+
+   ```python
+   import os
+   import re
+   import time
+   from zhconv import convert
+   from faster_whisper import WhisperModel
+   
+   # ===================== 工具函数 =====================
+   def format_timestamp(seconds: float) -> str:
+       """把秒数转成 SRT 时间戳格式"""
+       h = int(seconds // 3600)
+       m = int((seconds % 3600) // 60)
+       s = int(seconds % 60)
+       ms = int(round((seconds - int(seconds)) * 1000))
+       return f"{h:02}:{m:02}:{s:02},{ms:03}"
+   
+   # ===================== Step1: 转录 (输出临时字幕) =====================
+   def transcribe_audio_file(model, input_path, temp_output_path, mode):
+       """转录单个文件，生成临时 SRT 或 TXT"""
+       start_time = time.time()
+       language = "en" if mode == "en" else "zh"
+   
+       segments, info = model.transcribe(input_path, language=language)
+   
+       if mode == "en":
+           with open(temp_output_path, "w", encoding="utf-8") as srt_file:
+               for idx, seg in enumerate(segments, start=1):
+                   start = float(seg.start)
+                   end = float(seg.end)
+                   text = (seg.text or "").strip()
+                   srt_file.write(f"{idx}\n")
+                   srt_file.write(f"{format_timestamp(start)} --> {format_timestamp(end)}\n")
+                   srt_file.write(f"{text}\n\n")
+           print(f"英文临时字幕已生成: {temp_output_path}")
+   
+       elif mode == "zh":
+           full_text = ""
+           for seg in segments:
+               full_text += (seg.text or "").strip() + "\n"
+           simplified_text = convert(full_text, "zh-cn")
+           with open(temp_output_path, "w", encoding="utf-8") as txt_file:
+               txt_file.write(simplified_text)
+           print(f"中文字幕已生成: {temp_output_path}")
+   
+       elapsed_minutes = (time.time() - start_time) / 60
+       rest_seconds = (int(elapsed_minutes // 10) + 1) * 60
+       print(f"{input_path} 转录完成，耗时 {elapsed_minutes:.2f} 分钟，休息 {rest_seconds} 秒。")
+       time.sleep(rest_seconds)
+   
+   def transcribe_directory(model, folder_path, temp_dir, mode):
+       """批量转录文件夹"""
+       os.makedirs(temp_dir, exist_ok=True)
+       for root, dirs, files in os.walk(folder_path):
+           dirs.sort()
+           files.sort()
+           for file in files:
+               if file.endswith((".mp3", ".m4a", ".webm", ".mp4", ".mkv", ".avi", ".wav", ".flac")):
+                   video_path = os.path.join(root, file)
+                   temp_output_path = os.path.join(temp_dir, os.path.splitext(file)[0] + ".srt")
+                   print(f"正在转录: {video_path}")
+                   transcribe_audio_file(model, video_path, temp_output_path, mode)
+   
+   # ===================== Step2: 合并句子 =====================
+   SENT_END_CHARS = set(".?!。？！")
+   
+   def merge_srt_file(temp_path, final_path):
+       """把临时字幕合并成完整句子"""
+       with open(temp_path, "r", encoding="utf-8") as f:
+           content = f.read().strip()
+   
+       # 解析 SRT
+       blocks = content.split("\n\n")
+       entries = []
+       for block in blocks:
+           lines = block.strip().split("\n")
+           if len(lines) >= 3:
+               times = lines[1]
+               text = " ".join(lines[2:]).strip()
+               start, end = times.split(" --> ")
+               entries.append((start, end, text))
+   
+       merged_entries = []
+       buffer = []
+       buffer_start = None
+   
+       for start, end, text in entries:
+           if not buffer:  # 新缓存开始
+               buffer_start = start
+           buffer.append(text)
+   
+           if text and text[-1] in SENT_END_CHARS:
+               merged_text = " ".join(buffer).strip()
+               merged_entries.append((buffer_start, end, merged_text))
+               buffer = []
+               buffer_start = None
+   
+       if buffer:
+           merged_entries.append((buffer_start, entries[-1][1], " ".join(buffer).strip()))
+   
+       with open(final_path, "w", encoding="utf-8") as f:
+           for idx, (start, end, text) in enumerate(merged_entries, start=1):
+               f.write(f"{idx}\n")
+               f.write(f"{start} --> {end}\n")
+               f.write(f"{text}\n\n")
+   
+       print(f"✅ 合并完成: {final_path}")
+   
+   def merge_directory(temp_dir, original_input):
+       """批量合并 temp_dir 中的字幕，输出到原始文件目录"""
+       for file in os.listdir(temp_dir):
+           if file.endswith(".srt"):
+               temp_path = os.path.join(temp_dir, file)
+   
+               # 找到原始文件所在目录
+               base_name = os.path.splitext(file)[0]
+               if os.path.isdir(original_input):  # 批量模式
+                   # 遍历原始目录，找到对应视频的目录
+                   for root, _, files in os.walk(original_input):
+                       if any(f.startswith(base_name) for f in files):
+                           final_path = os.path.join(root, base_name + ".srt")
+                           break
+               else:  # 单文件模式
+                   final_path = os.path.splitext(original_input)[0] + ".srt"
+   
+               merge_srt_file(temp_path, final_path)
+   
+   # ===================== 主入口 =====================
+   def cooking(input_path, whisper_model_name, mode):
+       temp_dir = "temp_srt"
+       model = WhisperModel(whisper_model_name, compute_type="int8")  # CPU 推荐 int8
+   
+       if os.path.isdir(input_path):
+           transcribe_directory(model, input_path, temp_dir, mode)
+       elif os.path.isfile(input_path):
+           os.makedirs(temp_dir, exist_ok=True)
+           temp_output_path = os.path.join(temp_dir, os.path.splitext(os.path.basename(input_path))[0] + ".srt")
+           print(f"{input_path}，正在转录...")
+           transcribe_audio_file(model, input_path, temp_output_path, mode)
+       else:
+           print(f"❌ 无效路径：{input_path}")
+           return
+   
+       # 第二步：合并句子，输出到原始目录
+       merge_directory(temp_dir, input_path)
+   
+   if __name__ == "__main__":
+       input_path = "/Users/jiangsai/Downloads/幻影交易2024/Module 7 - Entry Models/PTS-M7_2、Trading from Extreme or Decisional Levels.mp4"
+       # 模型可选 "tiny", "base", "small", "medium", "large"
+       whisper_model_name = "medium"     # 英文推荐 "medium.en"，中英混合/中文用 "medium"
+       mode = "en"  # "en" -> 英文SRT, "zh" -> 中文TXT
+       cooking(input_path, whisper_model_name, mode)
+   
+   ```
+
+   ```python
+   # 新模型
+   # 绝大多数情况下，使用 use_word_timestamps = Ture 可以获得更好的效果
+   # 但个别音频文件，可能会断句会有问题，用 use_word_timestamps = False 逐段输出，手动修改即可
+   import os
+   import time
+   import re
+   from zhconv import convert
+   from faster_whisper import WhisperModel
+   
+   SENT_END_CHARS = set(".?!。？！")
+   ABBREVIATIONS = {
+       "mr.", "mrs.", "dr.", "ms.", "prof.", "sr.", "jr.", "vs.", "etc.", "e.g.", "i.e.",
+       "u.s.", "u.k.", "ph.d.", "a.m.", "p.m."
+   }
+   
+   def format_timestamp(seconds):
+       h = int(seconds // 3600)
+       m = int((seconds % 3600) // 60)
+       s = int(seconds % 60)
+       ms = int(round((seconds - int(seconds)) * 1000))
+       return f"{h:02}:{m:02}:{s:02},{ms:03}"
+   
+   def should_end_sentence(current_text):
+       txt = current_text.strip()
+       if not txt:
+           return False
+       last = txt[-1]
+       if last not in SENT_END_CHARS:
+           return False
+       low = txt.lower()
+       tail = low[-10:]
+       for abbr in ABBREVIATIONS:
+           if tail.endswith(abbr):
+               return False
+       return True
+   
+   def flush_sentence(entries, cur_words, cur_start, last_word_end):
+       if not cur_words:
+           return
+       text = " ".join(cur_words).strip()
+       text = re.sub(r"\s+([,.;:!?])", r"\1", text)  # 去掉标点前多余空格
+       entries.append((cur_start, last_word_end, text))
+   
+   def transcribe_audio_file(model, input_path, output_path, mode, gap_break_ms=1200, use_word_timestamps=True):
+       start_time = time.time()
+       language = "en" if mode == "en" else "zh"
+   
+       if use_word_timestamps:
+           # 按单词时间戳断句
+           segments, info = model.transcribe(
+               input_path,
+               language=language,
+               word_timestamps=True,
+               vad_filter=True,
+               vad_parameters={"min_silence_duration_ms": 300}
+           )
+       else:
+           # 原版：只用段落时间戳
+           segments, info = model.transcribe(
+               input_path,
+               language=language
+           )
+   
+       if mode == "en":
+           srt_path = output_path.replace(".txt", ".srt")
+   
+           if use_word_timestamps:
+               # ===== 新逻辑：按完整句子合并 =====
+               entries = []
+               cur_words = []
+               cur_start = None
+               last_word_end = None
+   
+               for seg in segments:
+                   if not seg.words:  # 无单词时间戳（可能是静音段）
+                       if seg.text.strip():
+                           if cur_start is None:
+                               cur_start = float(seg.start)
+                           last_word_end = float(seg.end)
+                           cur_words.append(seg.text.strip())
+                           if should_end_sentence(seg.text):
+                               flush_sentence(entries, cur_words, cur_start, last_word_end)
+                               cur_words, cur_start = [], None
+                       continue
+   
+                   for w in seg.words:
+                       w_text = (w.word or "").strip()
+                       if not w_text:
+                           continue
+   
+                       w_start = float(w.start)
+                       w_end = float(w.end)
+   
+                       # 静音断句
+                       if cur_words and gap_break_ms and last_word_end is not None:
+                           gap_ms = (w_start - last_word_end) * 1000.0
+                           if gap_ms >= gap_break_ms:
+                               flush_sentence(entries, cur_words, cur_start, last_word_end)
+                               cur_words, cur_start = [], None
+   
+                       if cur_start is None:
+                           cur_start = w_start
+   
+                       cur_words.append(w_text)
+                       last_word_end = w_end
+   
+                       # 标点断句
+                       if should_end_sentence(" ".join(cur_words)):
+                           flush_sentence(entries, cur_words, cur_start, last_word_end)
+                           cur_words, cur_start = [], None
+   
+               flush_sentence(entries, cur_words, cur_start, last_word_end)
+   
+           else:
+               # ===== 旧逻辑：segment 就是字幕行 =====
+               entries = [
+                   (float(seg.start), float(seg.end), seg.text.strip())
+                   for seg in segments
+               ]
+   
+           # 写 SRT
+           with open(srt_path, "w", encoding="utf-8") as srt_file:
+               for idx, (start, end, text) in enumerate(entries, start=1):
+                   srt_file.write(f"{idx}\n")
+                   srt_file.write(f"{format_timestamp(start)} --> {format_timestamp(end)}\n")
+                   srt_file.write(f"{text}\n\n")
+   
+           print(f"英文字幕已生成: {srt_path}")
+   
+       elif mode == "zh":
+           full_text = ""
+           for segment in segments:
+               full_text += segment.text.strip() + "\n"
+           simplified_text = convert(full_text, "zh-cn")
+           with open(output_path, "w", encoding="utf-8") as txt_file:
+               txt_file.write(simplified_text)
+           print(f"中文字幕已生成: {output_path}")
+   
+       elapsed_minutes = (time.time() - start_time) / 60
+       rest_seconds = (int(elapsed_minutes // 10) + 1) * 60
+       print(f"{input_path} 转录完成，耗时 {elapsed_minutes:.2f} 分钟，休息 {rest_seconds} 秒。")
+       time.sleep(rest_seconds)
+   
+   def transcribe_directory(model, folder_path, mode, use_word_timestamps):
+       for root, dirs, files in os.walk(folder_path):
+           dirs.sort()
+           files.sort()
+           for file in files:
+               if file.endswith((".mp3", ".m4a", ".webm", ".mp4", ".mkv", ".avi", ".wav", ".flac")):
+                   video_path = os.path.join(root, file)
+                   output_path = os.path.splitext(video_path)[0] + ".txt"
+                   print(f"正在转录: {video_path}")
+                   transcribe_audio_file(model, video_path, output_path, mode, use_word_timestamps=use_word_timestamps)
+   
+   def cooking(input_path, whisper_model_name, mode, use_word_timestamps=True):
+       model = WhisperModel(whisper_model_name, compute_type="int8")
+   
+       if os.path.isdir(input_path):
+           transcribe_directory(model, input_path, mode, use_word_timestamps)
+       elif os.path.isfile(input_path):
+           output_path = os.path.splitext(input_path)[0] + ".txt"
+           print(f"{input_path}，正在转录...")
+           transcribe_audio_file(model, input_path, output_path, mode, use_word_timestamps=use_word_timestamps)
+       else:
+           print(f"❌ 无效路径：{input_path}")
+   
+   if __name__ == "__main__":
+       input_path = '/Users/jiangsai/Downloads/幻影交易2024/未命名文件夹/Module 3 - Market Structure/PTS-M3_5、Mapping Structure & Confirming Breaks of Structure.mp4'
+       whisper_model_name = "medium"
+       mode = "en"  # "en" -> 英文 SRT, "zh" -> 中文 TXT
+       use_word_timestamps = False  # True 用按句子合并逻辑, False 用原来的逐段输出
+       cooking(input_path, whisper_model_name, mode, use_word_timestamps)
+   ```
+
+3. （新模型-废弃）语音转文字_模型whisper-ctranslate2
 
    > ```
    > pip install faster-whisper zhconv
@@ -13,32 +465,32 @@
    >   import time
    >   from zhconv import convert
    >   from faster_whisper import WhisperModel
-   >   
+   >             
    >   # 处理单个音视频文件
    >   def transcribe_audio_file(model, input_path, output_path, language):
    >       start_time = time.time()  # 开始计时
-   >   
+   >             
    >       segments, info = model.transcribe(input_path, language=language)
    >       full_text = ""
    >       for segment in segments:
    >           full_text += segment.text + "\n"
-   >   
+   >             
    >       # zhconv 转换为简体中文
    >       simplified_text = convert(full_text, "zh-cn")
-   >   
+   >             
    >       # 保存到文件
    >       with open(output_path, "w") as f:
    >           f.write(simplified_text)
-   >   
+   >             
    >       end_time = time.time()
    >       elapsed_time = end_time - start_time
    >       elapsed_minutes = elapsed_time / 60
    >       rest_minutes = int(elapsed_minutes // 10) + 1
    >       rest_seconds = rest_minutes * 60
-   >   
+   >             
    >       print(f"{output_path} 转录完成，耗时 {elapsed_minutes:.2f} 分钟，休息 {rest_seconds} 秒，避免CPU过热。")
    >       time.sleep(rest_seconds)
-   >   
+   >             
    >   # 批量处理文件夹
    >   def transcribe_directory(model, folder_path, language):
    >       for root, dirs, files in os.walk(folder_path):
@@ -48,12 +500,12 @@
    >                   output_path = os.path.splitext(video_path)[0] + ".txt"
    >                   print(f"正在转录: {video_path}")
    >                   transcribe_audio_file(model, video_path, output_path, language)
-   >   
+   >             
    >   # 入口函数
    >   def cooking(input_path, whisper_model_name):
    >       # "float16"（GPU），"int8"（CPU），"auto"（自动选用 GPU 或 CPU）
    >       model = WhisperModel(whisper_model_name, compute_type="int8")
-   >   
+   >             
    >       if os.path.isdir(input_path):
    >           transcribe_directory(model, input_path, language="zh")
    >       elif os.path.isfile(input_path):
@@ -62,14 +514,14 @@
    >           transcribe_audio_file(model, input_path, output_path, language="zh")
    >       else:
    >           print(f"提供的路径无效：{input_path}")
-   >   
+   >             
    >   if __name__ == "__main__":
    >       input_path = '/Users/jiangsai/Downloads/mavnt011.mp3'
    >       whisper_model_name = "base"  # 可用: "tiny", "base", "small", "medium", "large-v3"
    >       cooking(input_path, whisper_model_name)
    >   ```
 
-2. （废弃-原版的速度慢还占资源）OpenAI语音转文字_模型Whisper
+4. （废弃-原版的速度慢还占资源）OpenAI语音转文字_模型Whisper
 
    > [教程](https://github.com/openai/whisper)
    >
@@ -153,7 +605,7 @@
    >   import time
    >   import whisper
    >   import subprocess
-   >       
+   >                 
    >   # 使用 translate-shell 将英文翻译成中文
    >   def translate_with_google(text):
    >       if not text.strip():
@@ -170,7 +622,7 @@
    >       except Exception as e:
    >           print(f"[翻译失败] {text} → {e}")
    >           return "[翻译失败]"
-   >       
+   >                 
    >   # 将秒数转换为 SRT 格式的时间戳（如 00:01:15,300）
    >   def format_timestamp(seconds):
    >       h = int(seconds // 3600)
@@ -178,36 +630,36 @@
    >       s = int(seconds % 60)
    >       ms = int((seconds - int(seconds)) * 1000)
    >       return f"{h:02}:{m:02}:{s:02},{ms:03}"
-   >       
+   >                 
    >   # 处理单个音视频文件：转录 + 生成 .srt 双语字幕
    >   def transcribe_audio_file(model, input_path, output_path, language):
    >       start_time = time.time()
-   >       
+   >                 
    >       # 使用 Whisper 转录音频
    >       result = model.transcribe(input_path, language=language)
-   >       
+   >                 
    >       srt_path = output_path.replace(".txt", ".srt")
-   >       
+   >                 
    >       with open(srt_path, "w", encoding="utf-8") as f:
    >           for idx, segment in enumerate(result["segments"], start=1):
    >               eng = segment["text"].strip()
    >               zh = translate_with_google(eng)
    >               start = format_timestamp(segment["start"])
    >               end = format_timestamp(segment["end"])
-   >       
+   >                 
    >               f.write(f"{idx}\n")
    >               f.write(f"{start} --> {end}\n")
    >               f.write(f"{eng}\n")
    >               f.write(f"{zh}\n\n")
-   >       
+   >                 
    >               time.sleep(0.5)  # 控制翻译速率，避免风控
-   >       
+   >                 
    >       elapsed_minutes = (time.time() - start_time) / 60
    >       rest_seconds = (int(elapsed_minutes // 10) + 1) * 60
-   >       
+   >                 
    >       print(f"{srt_path} 双语字幕生成完毕，用时 {elapsed_minutes:.2f} 分钟，休息 {rest_seconds} 秒防止过热。")
    >       time.sleep(rest_seconds)
-   >       
+   >                 
    >   # 批量处理目录下所有音视频文件
    >   def transcribe_directory(model, input_folder, language):
    >       # 筛选支持的视频音频文件格式
@@ -215,17 +667,17 @@
    >           f for f in os.listdir(input_folder)
    >           if f.endswith((".mp3", ".m4a", ".webm", ".mp4", ".mkv", ".avi"))
    >       ]
-   >       
+   >                 
    >       for video_file in video_files:
    >           video_path = os.path.join(input_folder, video_file)
    >           txt_path = os.path.join(input_folder, os.path.splitext(video_file)[0] + ".txt")  # 用于生成 srt 文件名
    >           print(f"{video_file}，开始生成双语字幕...")
    >           transcribe_audio_file(model, video_path, txt_path, language)
-   >       
+   >                 
    >   # 主控制函数：判断路径类型并调用对应处理逻辑
    >   def cooking(input_path, whisper_model):
    >       model = whisper.load_model(whisper_model)
-   >       
+   >                 
    >       if os.path.isdir(input_path):
    >           transcribe_directory(model, input_path, language="en")
    >       elif os.path.isfile(input_path):
@@ -234,14 +686,14 @@
    >           transcribe_audio_file(model, input_path, output_path, language="en")
    >       else:
    >           print(f"❌ 无效路径：{input_path}")
-   >       
+   >                 
    >   if __name__ == "__main__":
    >       # 输入路径：可以是单个视频，也可以是文件夹
    >       input_path = '/Users/jiangsai/Downloads/TTT/1 - Introduction to the Course and to Trading.mp4'
    >       # Whisper 模型：建议用 base 或 small，"turbo" 是非法模型名
    >       whisper_model = "base"
    >       cooking(input_path, whisper_model)
-   >       
+   >                 
    >   ```
    >
    >   * 在线视频转文字
@@ -250,12 +702,12 @@
    >    python
    >     import subprocess  # 导入subprocess模块，用于执行系统命令
    >     import whisper  # 导入whisper模块，用于语音转文字
-   >   
+   >             
    >     # 定义YouTube视频的URL
    >       youtube_url = "https://www.youtube.com/watch?v=qZ3T5hunOuQ"
    >     # 定义输出的音频文件名
    >     output_audio = "audio.m4a"
-   >   
+   >             
    >     # 使用yt-dlp下载音频并提取为m4a格式，设置为低等品质
    >       # -f bestaudio: 选择最佳音频质量
    >     # --extract-audio: 只提取音频
@@ -263,23 +715,23 @@
    >     # --audio-quality 2: 设置音频质量为低等，0最低，9最高
    >     # -o output_audio: 指定输出文件名为 output_audio
    >     subprocess.run(["yt-dlp", "-f", "bestaudio", "--extract-audio", "--audio-format", "m4a", "--audio-quality", "2", "-o", output_audio, youtube_url])
-   >     
+   >               
    >     # 加载Whisper模型
    >     # "base" 是模型的大小，可以根据需要选择 "tiny", "base", "small", "medium", "large"
    >     model = whisper.load_model("base")
-   >     
+   >               
    >     # 使用Whisper模型读取音频文件并进行语音转文字
    >     result = model.transcribe(output_audio)
-   >     
+   >               
    >     # 打印转换后的文字
    >     print(result["text"])
-   >     
+   >               
    >     # 将转换后的文字保存到文本文件中
    >     # with open("transcription.txt", "w") as f:
    >     #     f.write(result["text"])
    > ```
 
-3. 微软文字转语音库
+5. 微软文字转语音库
 
    > [教程](https://github.com/rany2/edge-tts)
    >
@@ -377,13 +829,13 @@
    >
    >   ```python
    >   import os
-   >                               
+   >                                         
    >   Voice = "zh-CN-YunjianNeural"
    >   Rate = "+0%"
    >   Volume = "+0%"
-   >                               
+   >                                         
    >   Handle_Folder = "/Users/jiangsai/Desktop/1"
-   >                               
+   >                                         
    >   # 转换目录内所有单个txt文件为单个mp3音频
    >   for Folder_Path, SonFolders, FileNames in os.walk(Handle_Folder):
    >       for FileName in FileNames:
@@ -396,7 +848,7 @@
    >               os.system(cmd)
    >   ```
 
-4. 分割中英字幕脚本
+6. 分割中英字幕脚本
 
    ```python
    import re
@@ -411,7 +863,7 @@
    print(result)
    ```
 
-5. 获取目录下所有视频的时长
+7. 获取目录下所有视频的时长
 
    ```python
    import os
@@ -546,7 +998,7 @@
        generate_csv_file(directory_to_scan, csv_output_path)
    ```
 
-6. 批量删除文件夹内所有视频的开头 x 秒，结尾 y 秒
+8. 批量删除文件夹内所有视频的开头 x 秒，结尾 y 秒
 
    > ```python
    > import subprocess
@@ -585,7 +1037,7 @@
    > print("所有视频处理完毕。")
    > ```
 
-7. PDF转txt
+9. PDF转txt
 
    ```python
    import fitz, re  # PyMuPDF
@@ -648,7 +1100,7 @@
    
    ```
 
-8. 定时提醒
+10. 定时提醒
 
    1. 每15分钟提醒1次
 
@@ -755,13 +1207,13 @@
       >    import time
       >    from datetime import datetime
       >    import asyncio
-      >             
+      >                            
       >    # 中文数字映射
       >    chinese_nums = {
       >     0: '零', 1: '一', 2: '二', 3: '三', 4: '四',
       >     5: '五', 6: '六', 7: '七', 8: '八', 9: '九', 10: '十'
       >    }
-      >             
+      >                            
       >    def num_to_chinese(n):
       >     if n < 10:
       >         return chinese_nums[n]
@@ -771,28 +1223,28 @@
       >         return '十' + chinese_nums[n % 10]
       >     else:
       >         return chinese_nums[n // 10] + '十' + (chinese_nums[n % 10] if n % 10 != 0 else '')
-      >             
+      >                            
       >    def get_chinese_time():
       >     now = datetime.now()
       >     hour_ch = num_to_chinese(now.hour)
       >     minute_ch = num_to_chinese(now.minute) if now.minute != 0 else '整'
       >     return f"{hour_ch}点{minute_ch}"
-      >             
+      >                            
       >    async def speak(text):
       >     from edge_tts import Communicate
       >     communicate = Communicate(text, voice="zh-CN-XiaoxiaoNeural")
       >     await communicate.save("output.mp3")
       >     os.system("afplay output.mp3")
-      >             
+      >                            
       >    def send_notification(title, message):
       >     subprocess.run([
       >         "osascript", "-e",
       >         f'display notification "{message}" with title "{title}"'
       >     ])
-      >             
+      >                            
       >    def play_system_sound():
       >     subprocess.run(["afplay", "/System/Library/Sounds/Sosumi.aiff"])
-      >             
+      >                            
       >    def main_loop(mode):
       >     already_triggered = None
       >     while True:
@@ -800,13 +1252,13 @@
       >         key = f"{now.hour}:{now.minute}"
       >         if now.second == 0 and key != already_triggered:
       >             minute = now.minute
-      >             
+      >                            
       >             # 模式 1：F30（整点和半点播报时间）
       >             if mode == "1":
       >                 if minute in [0, 30]:
       >                     ch_time = get_chinese_time()
       >                     asyncio.run(speak(f"{ch_time}"))
-      >             
+      >                            
       >             # 模式 2：F5（每5分钟提示，整点和半点语音）
       >             elif mode == "2":
       >                 if minute in [0, 30]:
@@ -815,7 +1267,7 @@
       >                 elif minute % 5 == 0:
       >                     play_system_sound()
       >                     send_notification("5分钟了", "看一眼盘面")
-      >             
+      >                            
       >             # 模式 3：F15+F3（15/30/45/整点播报，其余每3分钟提醒）
       >             elif mode == "3":
       >                 if minute in [0, 15, 30, 45]:
@@ -824,7 +1276,7 @@
       >                 elif minute % 3 == 0 and minute not in [0, 15, 30, 45]:
       >                     play_system_sound()
       >                     send_notification("3分钟了", "盯一下盘面")
-      >             
+      >                            
       >             already_triggered = key
       >         time.sleep(1)
       >    
@@ -843,14 +1295,14 @@
       >
       >    ```bash
       >    #!/bin/bash
-      >             
+      >                            
       >    LOCK_FILE="$HOME/.reminder.lock"
       >    SCRIPT_PATH="$HOME/Downloads/Python脚本/reminder.py"
-      >             
+      >                            
       >    # 如果锁文件存在，读取其中的 PID
       >    if [ -f "$LOCK_FILE" ]; then
       >        OLD_PID=$(cat "$LOCK_FILE")
-      >             
+      >                            
       >        # 检查该 PID 是否仍在运行且是我们这个脚本
       >        if ps -p "$OLD_PID" > /dev/null && ps -p "$OLD_PID" -o args= | grep -q "$SCRIPT_PATH"; then
       >            # 是在运行中，关闭它
@@ -863,17 +1315,17 @@
       >            rm -f "$LOCK_FILE"
       >        fi
       >    fi
-      >             
+      >                            
       >    # 启动脚本（后台），保存 PID
       >    /opt/anaconda3/bin/python3 "$SCRIPT_PATH" 2 &
       >    NEW_PID=$!
       >    echo "$NEW_PID" > "$LOCK_FILE"
       >    osascript -e 'display notification "程序已启动" with title "提醒助手"'
-      >             
+      >                            
       >    exit 0
       >    ```
 
-9. 监控币安的币价，达到某个价格区域时，邮件提醒
+11. 监控币安的币价，达到某个价格区域时，邮件提醒
 
    > ```python
    > import requests, time, smtplib, datetime
@@ -980,7 +1432,7 @@
    > ```
    >
 
-10. 番茄钟
+11. 番茄钟
 
    > 用法：用`pomodoro.command`控制`pomodoro.py`
    >

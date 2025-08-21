@@ -1,5 +1,6 @@
 # 安装 ffmpeg 和 translate-shell：brew install ffmpeg translate-shell（设置全局代理，博客搜“代理“）
 # 安装 openai-whisper：pip install openai-whisper
+# 自动翻译废弃了，Google翻译不好，最好的是转录完丢给grok
 import os
 import time
 import whisper
@@ -42,14 +43,14 @@ def transcribe_audio_file(model, input_path, output_path, language):
     with open(srt_path, "w", encoding="utf-8") as f:
         for idx, segment in enumerate(result["segments"], start=1):
             eng = segment["text"].strip()
-            zh = translate_with_google(eng)
+            # zh = translate_with_google(eng)
             start = format_timestamp(segment["start"])
             end = format_timestamp(segment["end"])
 
             f.write(f"{idx}\n")
             f.write(f"{start} --> {end}\n")
             f.write(f"{eng}\n")
-            f.write(f"{zh}\n\n")
+            # f.write(f"{zh}\n\n")
 
             time.sleep(0.5)  # 控制翻译速率，避免风控
 
@@ -58,20 +59,6 @@ def transcribe_audio_file(model, input_path, output_path, language):
 
     print(f"{srt_path} 双语字幕生成完毕，用时 {elapsed_minutes:.2f} 分钟，休息 {rest_seconds} 秒防止过热。")
     time.sleep(rest_seconds)
-
-# 批量处理目录下所有音视频文件
-# def transcribe_directory(model, input_folder, language):
-#     # 筛选支持的视频音频文件格式
-#     video_files = [
-#         f for f in os.listdir(input_folder)
-#         if f.endswith((".mp3", ".m4a", ".webm", ".mp4", ".mkv", ".avi"))
-#     ]
-
-#     for video_file in video_files:
-#         video_path = os.path.join(input_folder, video_file)
-#         txt_path = os.path.join(input_folder, os.path.splitext(video_file)[0] + ".txt")  # 用于生成 srt 文件名
-#         print(f"{video_file}，开始生成双语字幕...")
-#         transcribe_audio_file(model, video_path, txt_path, language)
 
 # 递归处理目录及其子目录下的所有视频文件
 def transcribe_directory(model, input_folder, language):
@@ -99,7 +86,7 @@ def cooking(input_path, whisper_model):
 
 if __name__ == "__main__":
     # 输入路径：可以是单个视频，也可以是文件夹
-    input_path = '/Users/jiangsai/Downloads/TTT/temp'
+    input_path = '/Users/jiangsai/Downloads/幻影交易2024/Module 4 - OrderFlow/PTS-M4_1、Orderflow Basics_ Supply & Demand.mp4'
     # 加载Whisper模型 "tiny", "base", "small", "medium", "large", "turbo"
     whisper_model = "base"
     cooking(input_path, whisper_model)

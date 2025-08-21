@@ -1,5 +1,6 @@
 import os
 import subprocess
+import csv
 
 
 def get_video_duration(file_path):
@@ -69,17 +70,61 @@ def generate_markdown_table(directory):
     return "\n".join(markdown_lines)
 
 
+def generate_csv_file(directory, output_csv_path):
+    """
+    遍历目录，生成 CSV 文件
+    """
+    with open(output_csv_path, mode='w', newline='', encoding='utf-8-sig') as csv_file:
+
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerow(["Directory", "Video Name", "Duration (hh:mm:ss)", "Duration (seconds)"])
+
+        previous_dir = None
+        directory_total_duration = 0  # 当前目录总时长
+
+        for root, _, files in sorted(os.walk(directory)):
+            # 筛选出视频文件
+            video_files = [file for file in files if file.lower().endswith(('.mp4', '.mkv', '.avi', '.mov'))]
+            if not video_files:
+                continue
+
+            # 当前目录的名称
+            current_dir = os.path.basename(root) or "."
+
+            # 如果切换到新的目录，输出上一个目录的总时长
+            if previous_dir is not None and previous_dir != current_dir:
+                csv_writer.writerow([f"{previous_dir} (Total)", "", format_duration(directory_total_duration), directory_total_duration])
+                directory_total_duration = 0  # 重置总时长
+
+            previous_dir = current_dir
+
+            # 添加当前目录的视频信息
+            for file in sorted(video_files):
+                file_path = os.path.join(root, file)
+                duration = get_video_duration(file_path)
+                directory_total_duration += duration
+                csv_writer.writerow([current_dir, file, format_duration(duration), duration])
+
+        # 输出最后一个目录的总时长
+        if previous_dir is not None:
+            csv_writer.writerow([f"{previous_dir} (Total)", "", format_duration(directory_total_duration), directory_total_duration])
+
+
 if __name__ == "__main__":
     # 指定要扫描的目录
-    directory_to_scan = "/Users/jiangsai/Downloads/精品班 PremumClass001"
+    directory_to_scan = "/Users/jiangsai/Downloads/鼎牛/大师班MasterClass001"
     
     # 生成 Markdown 表格
     markdown_table = generate_markdown_table(directory_to_scan)
     
-    # 输出表格到终端
+    # 输出 Markdown 表格到终端
     print(markdown_table)
     
-    # 保存到文件
-    output_file_path = os.path.join(directory_to_scan, "video_durations.md")
-    with open(output_file_path, "w") as md_file:
-        md_file.write(markdown_table)
+    # 保存 Markdown 表格到文件
+    # markdown_output_path = os.path.join(directory_to_scan, "video_durations.md")
+    # with open(markdown_output_path, "w") as md_file:
+    #     md_file.write(markdown_table)
+    
+    # 生成 CSV 文件
+    csv_output_path = os.path.join(directory_to_scan, "video_durations.csv")
+    generate_csv_file(directory_to_scan, csv_output_path)

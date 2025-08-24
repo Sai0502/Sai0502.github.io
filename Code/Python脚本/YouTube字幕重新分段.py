@@ -111,5 +111,5 @@ def process_path(path: str):
 
 if __name__ == "__main__":
     # 👉 修改这里的路径，可以是文件或文件夹
-    input_path = "/Users/jiangsai/Downloads/ 8 Entries Factoring in the Left & Right Side of a 5m Zone.srt"
+    input_path = "/Users/jiangsai/Downloads/ PTS M1 5、Regulations & Choosing a Broker [DownSub.com].srt"
     process_path(input_path)

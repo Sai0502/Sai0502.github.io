@@ -112,7 +112,7 @@ def generate_csv_file(directory, output_csv_path):
 
 if __name__ == "__main__":
     # 指定要扫描的目录
-    directory_to_scan = "/Users/jiangsai/Downloads/鼎牛/大师班MasterClass001"
+    directory_to_scan = "/Users/jiangsai/Downloads/徳拜订单流"
     
     # 生成 Markdown 表格
     markdown_table = generate_markdown_table(directory_to_scan)

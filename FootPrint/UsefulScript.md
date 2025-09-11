@@ -124,9 +124,19 @@
    > [教程](https://github.com/openai/whisper)
    >
    > ```bash
+   > """
+   > 音频视频语音转文字
+   > 1. 可处理文件/文件夹递归所有文件
+   > 2. 音频直接转录，视频先转成临时mp3，再转录，结束后删除临时mp3
+   > 3. 支持 OpenAI Whisper / Faster-Whisper 引擎
+   > 4. 可选 split_segment=True，对字幕进行句子级合并与优化
+   > 5. 可输出SRT（带时间戳字幕），TXT （纯文字）
+   > """
    > import os
    > import time
    > import re
+   > import subprocess
+   > import tempfile
    > 
    > # =====================
    > # 工具函数
@@ -287,12 +297,25 @@
    >     # 最终字幕文件（和视频同名）
    >     output_path = file_path  # 直接覆盖原始位置
    >     write_srt(merged_entries, output_path)
-   > 
-   >     print(f"✅ 原始字幕已移到: {original_path}")
-   >     print(f"✅ 最终处理字幕: {output_path}")
    > # =====================
    > # 主入口
    > # =====================
+   > 
+   > def extract_audio_temp(input_path: str) -> str:
+   >     """如果是视频文件，提取音频到临时 mp3，返回新路径；否则返回原路径"""
+   >     video_exts = (".mp4", ".mkv", ".avi", ".mov", ".webm")
+   >     if input_path.lower().endswith(video_exts):
+   >         fd, out_path = tempfile.mkstemp(suffix=".mp3")
+   >         os.close(fd)
+   >         print(f"🎬 检测到视频文件，提取临时音频: {out_path}")
+   >         cmd = [
+   >             "ffmpeg", "-y", "-i", input_path,
+   >             "-vn", "-ac", "1", "-ar", "16000", "-b:a", "128k",
+   >             out_path
+   >         ]
+   >         subprocess.run(cmd, check=True)
+   >         return out_path
+   >     return input_path
    > 
    > def cooking(input_path, engine, model_name, device="cpu", language="en", split_segment=False, srt_txt="srt"):
    >     if engine == "whisper":
@@ -308,26 +331,38 @@
    >         raise ValueError("❌ engine 必须是 'whisper' 或 'faster_whisper'")
    > 
    >     if os.path.isfile(input_path):
-   >         out_path = os.path.splitext(input_path)[0] + ".txt"
-   >         print(f"🎬 {input_path} 开始转录...")
-   >         srt_path = transcribe_func(asr_model, input_path, out_path, language, srt_txt=srt_txt)
-   >         if split_segment and srt_txt == "srt":
-   >             process_srt(srt_path)
+   >         temp_path = extract_audio_temp(input_path)
+   >         try:
+   >             out_path = os.path.splitext(input_path)[0] + ".txt"
+   >             print(f"🎬 {input_path} 开始转录...")
+   >             srt_path = transcribe_func(asr_model, temp_path, out_path, language, srt_txt=srt_txt)
+   >             if split_segment and srt_txt == "srt":
+   >                 process_srt(srt_path)
+   >         finally:
+   >             if temp_path != input_path and os.path.exists(temp_path):
+   >                 os.remove(temp_path)
+   >                 print(f"🗑️ 已删除临时文件 {temp_path}")
    >     elif os.path.isdir(input_path):
    >         for f in os.listdir(input_path):
    >             if f.endswith((".mp3", ".m4a", ".webm", ".mp4", ".mkv", ".avi")):
    >                 in_path = os.path.join(input_path, f)
-   >                 out_path = os.path.splitext(in_path)[0] + ".txt"
-   >                 print(f"🎬 {f} 开始转录...")
-   >                 srt_path = transcribe_func(asr_model, in_path, out_path, language, srt_txt=srt_txt)
-   >                 if split_segment and srt_txt == "srt":
-   >                     process_srt(srt_path)
+   >                 temp_path = extract_audio_temp(in_path)
+   >                 try:
+   >                     out_path = os.path.splitext(in_path)[0] + ".txt"
+   >                     print(f"🎬 {f} 开始转录...")
+   >                     srt_path = transcribe_func(asr_model, temp_path, out_path, language, srt_txt=srt_txt)
+   >                     if split_segment and srt_txt == "srt":
+   >                         process_srt(srt_path)
+   >                 finally:
+   >                     if temp_path != in_path and os.path.exists(temp_path):
+   >                         os.remove(temp_path)
+   >                         print(f"🗑️ 已删除临时文件 {temp_path}")
    >     else:
    >         print(f"❌ 无效路径: {input_path}")
    > 
    > 
    > if __name__ == "__main__":
-   >     input_path = "/Users/jiangsai/Downloads/幻影交易2024/Module 2 - Candlestick & Swing Formation Basics/PTS-M2_4、Market Sessions.mp4"
+   >     input_path = "/Users/jiangsai/Downloads/TTT/1 - Introduction to the Course and to Trading.mp4"
    >     engine = "whisper"    # "whisper" 或 "faster_whisper"
    >     model = "small"       # "tiny" / "base" / "small" / "medium" / "large-v2"
    >     split_segment = True  # False = 类似YouTube那种段不成段的字幕 True = 拆分按句号合并
@@ -344,7 +379,7 @@
    >   import time
    >   import whisper
    >   import subprocess
-   >   
+   >           
    >   # 将秒数转换为 SRT 格式的时间戳（如 00:01:15,300）
    >   def format_timestamp(seconds):
    >       h = int(seconds // 3600)
@@ -352,33 +387,33 @@
    >       s = int(seconds % 60)
    >       ms = int((seconds - int(seconds)) * 1000)
    >       return f"{h:02}:{m:02}:{s:02},{ms:03}"
-   >   
+   >           
    >   # 处理单个音视频文件：转录 + 生成 .srt 双语字幕
    >   def transcribe_audio_file(model, input_path, output_path, language):
    >       start_time = time.time()
-   >   
+   >           
    >       # 使用 Whisper 转录音频
    >       result = model.transcribe(input_path, language=language)
-   >   
+   >           
    >       srt_path = output_path.replace(".txt", ".srt")
-   >   
+   >           
    >       with open(srt_path, "w", encoding="utf-8") as f:
    >           for idx, segment in enumerate(result["segments"], start=1):
    >               eng = segment["text"].strip()
    >               start = format_timestamp(segment["start"])
    >               end = format_timestamp(segment["end"])
-   >   
+   >           
    >               f.write(f"{idx}\n")
    >               f.write(f"{start} --> {end}\n")
    >               f.write(f"{eng}\n")
    >               time.sleep(0.5)  # 控制翻译速率，避免风控
-   >   
+   >           
    >       elapsed_minutes = (time.time() - start_time) / 60
    >       rest_seconds = (int(elapsed_minutes // 10) + 1) * 60
-   >   
+   >           
    >       print(f"{srt_path} 字幕生成完毕，用时 {elapsed_minutes:.2f} 分钟，休息 {rest_seconds} 秒防止过热。")
    >       time.sleep(rest_seconds)
-   >   
+   >           
    >   # 批量处理目录下所有音视频文件
    >   def transcribe_directory(model, input_folder, language):
    >       # 筛选支持的视频音频文件格式
@@ -386,17 +421,17 @@
    >           f for f in os.listdir(input_folder)
    >           if f.endswith((".mp3", ".m4a", ".webm", ".mp4", ".mkv", ".avi"))
    >       ]
-   >   
+   >           
    >       for video_file in video_files:
    >           video_path = os.path.join(input_folder, video_file)
    >           txt_path = os.path.join(input_folder, os.path.splitext(video_file)[0] + ".txt")  # 用于生成 srt 文件名
    >           print(f"{video_file}，开始生成字幕...")
    >           transcribe_audio_file(model, video_path, txt_path, language)
-   >   
+   >           
    >   # 主控制函数：判断路径类型并调用对应处理逻辑
    >   def cooking(input_path, whisper_model):
    >       model = whisper.load_model(whisper_model)
-   >   
+   >           
    >       if os.path.isdir(input_path):
    >           transcribe_directory(model, input_path, language="en")
    >       elif os.path.isfile(input_path):
@@ -405,14 +440,14 @@
    >           transcribe_audio_file(model, input_path, output_path, language="en")
    >       else:
    >           print(f"❌ 无效路径：{input_path}")
-   >   
+   >           
    >   if __name__ == "__main__":
    >       # 输入路径：可以是单个视频，也可以是文件夹
    >       input_path = '/Users/jiangsai/Downloads/TTT/1 - Introduction to the Course and to Trading.mp4'
    >       # Whisper 模型：建议用 base 或 small，"turbo" 是非法模型名
    >       whisper_model = "base"
    >       cooking(input_path, whisper_model)
-   >   
+   >           
    >   ```
    >
    >   * 在线视频转文字
@@ -421,12 +456,12 @@
    >    python
    >     import subprocess  # 导入subprocess模块，用于执行系统命令
    >     import whisper  # 导入whisper模块，用于语音转文字
-   >   
+   >           
    >     # 定义YouTube视频的URL
    >       youtube_url = "https://www.youtube.com/watch?v=qZ3T5hunOuQ"
    >     # 定义输出的音频文件名
    >     output_audio = "audio.m4a"
-   >   
+   >           
    >     # 使用yt-dlp下载音频并提取为m4a格式，设置为低等品质
    >       # -f bestaudio: 选择最佳音频质量
    >     # --extract-audio: 只提取音频
@@ -434,17 +469,17 @@
    >     # --audio-quality 2: 设置音频质量为低等，0最低，9最高
    >     # -o output_audio: 指定输出文件名为 output_audio
    >     subprocess.run(["yt-dlp", "-f", "bestaudio", "--extract-audio", "--audio-format", "m4a", "--audio-quality", "2", "-o", output_audio, youtube_url])
-   >   
+   >           
    >     # 加载Whisper模型
    >     # "base" 是模型的大小，可以根据需要选择 "tiny", "base", "small", "medium", "large"
    >     model = whisper.load_model("base")
-   >   
+   >           
    >     # 使用Whisper模型读取音频文件并进行语音转文字
    >     result = model.transcribe(output_audio)
-   >   
+   >           
    >     # 打印转换后的文字
    >     print(result["text"])
-   >   
+   >           
    >     # 将转换后的文字保存到文本文件中
    >     # with open("transcription.txt", "w") as f:
    >     #     f.write(result["text"])
@@ -549,13 +584,13 @@
    >
    >   ```python
    >   import os
-   >                                           
+   >                                                     
    >   Voice = "zh-CN-YunjianNeural"
    >   Rate = "+0%"
    >   Volume = "+0%"
-   >                                           
+   >                                                     
    >   Handle_Folder = "/Users/jiangsai/Desktop/1"
-   >                                           
+   >                                                     
    >   # 转换目录内所有单个txt文件为单个mp3音频
    >   for Folder_Path, SonFolders, FileNames in os.walk(Handle_Folder):
    >       for FileName in FileNames:
@@ -927,13 +962,13 @@
       >    import time
       >    from datetime import datetime
       >    import asyncio
-      >                               
+      >                                              
       >    # 中文数字映射
       >    chinese_nums = {
       >     0: '零', 1: '一', 2: '二', 3: '三', 4: '四',
       >     5: '五', 6: '六', 7: '七', 8: '八', 9: '九', 10: '十'
       >    }
-      >                               
+      >                                              
       >    def num_to_chinese(n):
       >     if n < 10:
       >         return chinese_nums[n]
@@ -943,28 +978,28 @@
       >         return '十' + chinese_nums[n % 10]
       >     else:
       >         return chinese_nums[n // 10] + '十' + (chinese_nums[n % 10] if n % 10 != 0 else '')
-      >                               
+      >                                              
       >    def get_chinese_time():
       >     now = datetime.now()
       >     hour_ch = num_to_chinese(now.hour)
       >     minute_ch = num_to_chinese(now.minute) if now.minute != 0 else '整'
       >     return f"{hour_ch}点{minute_ch}"
-      >                               
+      >                                              
       >    async def speak(text):
       >     from edge_tts import Communicate
       >     communicate = Communicate(text, voice="zh-CN-XiaoxiaoNeural")
       >     await communicate.save("output.mp3")
       >     os.system("afplay output.mp3")
-      >                               
+      >                                              
       >    def send_notification(title, message):
       >     subprocess.run([
       >         "osascript", "-e",
       >         f'display notification "{message}" with title "{title}"'
       >     ])
-      >                               
+      >                                              
       >    def play_system_sound():
       >     subprocess.run(["afplay", "/System/Library/Sounds/Sosumi.aiff"])
-      >                               
+      >                                              
       >    def main_loop(mode):
       >     already_triggered = None
       >     while True:
@@ -972,13 +1007,13 @@
       >         key = f"{now.hour}:{now.minute}"
       >         if now.second == 0 and key != already_triggered:
       >             minute = now.minute
-      >                               
+      >                                              
       >             # 模式 1：F30（整点和半点播报时间）
       >             if mode == "1":
       >                 if minute in [0, 30]:
       >                     ch_time = get_chinese_time()
       >                     asyncio.run(speak(f"{ch_time}"))
-      >                               
+      >                                              
       >             # 模式 2：F5（每5分钟提示，整点和半点语音）
       >             elif mode == "2":
       >                 if minute in [0, 30]:
@@ -987,7 +1022,7 @@
       >                 elif minute % 5 == 0:
       >                     play_system_sound()
       >                     send_notification("5分钟了", "看一眼盘面")
-      >                               
+      >                                              
       >             # 模式 3：F15+F3（15/30/45/整点播报，其余每3分钟提醒）
       >             elif mode == "3":
       >                 if minute in [0, 15, 30, 45]:
@@ -996,7 +1031,7 @@
       >                 elif minute % 3 == 0 and minute not in [0, 15, 30, 45]:
       >                     play_system_sound()
       >                     send_notification("3分钟了", "盯一下盘面")
-      >                               
+      >                                              
       >             already_triggered = key
       >         time.sleep(1)
       >    
@@ -1015,14 +1050,14 @@
       >
       >    ```bash
       >    #!/bin/bash
-      >                               
+      >                                              
       >    LOCK_FILE="$HOME/.reminder.lock"
       >    SCRIPT_PATH="$HOME/Downloads/Python脚本/reminder.py"
-      >                               
+      >                                              
       >    # 如果锁文件存在，读取其中的 PID
       >    if [ -f "$LOCK_FILE" ]; then
       >        OLD_PID=$(cat "$LOCK_FILE")
-      >                               
+      >                                              
       >        # 检查该 PID 是否仍在运行且是我们这个脚本
       >        if ps -p "$OLD_PID" > /dev/null && ps -p "$OLD_PID" -o args= | grep -q "$SCRIPT_PATH"; then
       >            # 是在运行中，关闭它
@@ -1035,13 +1070,13 @@
       >            rm -f "$LOCK_FILE"
       >        fi
       >    fi
-      >                               
+      >                                              
       >    # 启动脚本（后台），保存 PID
       >    /opt/anaconda3/bin/python3 "$SCRIPT_PATH" 2 &
       >    NEW_PID=$!
       >    echo "$NEW_PID" > "$LOCK_FILE"
       >    osascript -e 'display notification "程序已启动" with title "提醒助手"'
-      >                               
+      >                                              
       >    exit 0
       >    ```
 
@@ -1245,6 +1280,139 @@
    >
    >    > 系统偏好设置 → 隐私与安全性 → 辅助功能 → 添加【终端Terminal】
    >
-   > 
+
+12. FFmpeg极速分割合并视频
+
+    ```python
+    # 视频剪辑，Movie_Edit.txt示例
+    # 文件名路径：/Users/jiangsai/Desktop/供需关系/1.0.mp4
+    # 24:28 - 28:59
+    # 1:36:13 - 1:52:46
+    # 将1.0.mp4的上面两段删掉，重新合成新视频
+    
+    import os
+    import re
+    import subprocess
+    
+    def parse_time(t):
+        """把 24:28 或 1:21:33 转换成秒"""
+        t = t.replace("：", ":")  # ✅ 自动把全角冒号替换成半角
+        parts = t.split(":")
+        parts = [int(p) for p in parts]
+        if len(parts) == 2:  # 分:秒
+            m, s = parts
+            return m * 60 + s
+        elif len(parts) == 3:  # 时:分:秒
+            h, m, s = parts
+            return h * 3600 + m * 60 + s
+        else:
+            raise ValueError(f"无法解析时间格式: {t}")
+    
+    def process_file(instruction_file):
+        with open(instruction_file, "r", encoding="utf-8") as f:
+            lines = [line.strip() for line in f if line.strip()]
+    
+        # 第一行是文件路径
+        input_file = lines[0].split("：", 1)[1]
+        base_dir = os.path.dirname(input_file)
+        filename = os.path.basename(input_file)
+        name, ext = os.path.splitext(filename)
+        output_file = os.path.join(base_dir, f"{name}_Done{ext}")
+    
+        # 解析要删除的时间段
+        cut_ranges = []
+        for line in lines[1:]:
+            start, end = re.split(r"\s*-\s*", line)
+            cut_ranges.append((parse_time(start), parse_time(end)))
+    
+        # 获取总时长
+        cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+               "-of", "default=noprint_wrappers=1:nokey=1", input_file]
+        total_duration = float(subprocess.check_output(cmd).decode().strip())
+    
+        # 计算保留的片段
+        keep_ranges = []
+        last_end = 0
+        for start, end in cut_ranges:
+            if last_end < start:
+                keep_ranges.append((last_end, start))
+            last_end = end
+        if last_end < total_duration:
+            keep_ranges.append((last_end, total_duration))
+    
+        # 逐段导出临时文件
+        temp_files = []
+        for i, (start, end) in enumerate(keep_ranges):
+            temp_file = os.path.join(base_dir, f"temp_{i}{ext}")
+            cmd = [
+                "ffmpeg", "-y", "-i", input_file,
+                "-ss", str(start), "-to", str(end),
+                "-c", "copy", temp_file
+            ]
+            subprocess.run(cmd, check=True)
+            temp_files.append(temp_file)
+    
+        # 合并
+        concat_file = os.path.join(base_dir, "concat_list.txt")
+        with open(concat_file, "w", encoding="utf-8") as f:
+            for temp in temp_files:
+                f.write(f"file '{temp}'\n")
+    
+        subprocess.run([
+            "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+            "-i", concat_file, "-c", "copy", output_file
+        ], check=True)
+    
+        # 清理临时文件
+        for temp in temp_files:
+            os.remove(temp)
+        os.remove(concat_file)
+    
+        print(f"处理完成: {output_file}")
+    
+    
+    if __name__ == "__main__":
+        process_file("/Users/jiangsai/Desktop/Movie_Edit.txt")  # 你的文件名
+    ```
+
+12. 批量压缩视频
+
+    ```python
+    # 批量压缩目录下所有视频
+    # brew install handbrake
+    
+    import os
+    import subprocess
+    
+    def compress_videos(input_dir):
+        # 创建输出目录
+        output_dir = os.path.join(input_dir, "压缩Done")
+        os.makedirs(output_dir, exist_ok=True)
+    
+        # 获取目录下所有文件并排序
+        files = sorted(os.listdir(input_dir))
+    
+        for filename in files:
+            input_path = os.path.join(input_dir, filename)
+            output_path = os.path.join(output_dir, filename)
+    
+            # 只处理视频文件（简单判断扩展名）
+            if os.path.isfile(input_path) and filename.lower().endswith(('.mp4', '.mkv', '.avi', '.mov')):
+                print(f"正在压缩: {filename}")
+                subprocess.run([
+                    "HandBrakeCLI", 
+                    "-i", input_path, 
+                    "-o", output_path,
+                    "-e", "x264",  # 使用x264编码
+                    "-q", "22",    # 质量值，18-28之间，数值越小质量越好（文件越大）
+                    "-B", "160"    # 音频比特率
+                ])
+                print(f"完成: {filename}")
+    
+    if __name__ == "__main__":
+        compress_videos("/Users/jiangsai/Desktop/smc中阶课程")
+    ```
+    
+    
 
    

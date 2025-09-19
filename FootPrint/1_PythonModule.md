@@ -1037,15 +1037,15 @@ ffmpeg -ss 00:06:15 -i "input.mp4" -to 00:02:25 -vcodec copy -acodec copy -y "ou
 1. 创建一个文本文件`filelist.txt`
 
    ```bash
-   file 'input1.mkv'
-   file 'input2.mkv'
-   file 'input3.mkv'
+   file 'input1.mp4'
+   file 'input2.mp4'
+   file 'input3.mp4'
    ```
 
 2. 命令
 
    ```bash
-   ffmpeg -f concat -i filelist.txt -c copy output.mkv
+   ffmpeg -f concat -safe 0 -i filelist.txt -c copy output.mp4
    ```
 
 #### 5. 下载微博视频

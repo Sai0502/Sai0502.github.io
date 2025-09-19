@@ -5,71 +5,65 @@ import os
 import subprocess
 
 def compress_videos(input_dir):
-    # 创建输出目录
-    output_dir = os.path.join(input_dir, "压缩Done")
-    os.makedirs(output_dir, exist_ok=True)
+    # 输出总目录
+    output_root = os.path.join(input_dir, "压缩Done")
 
-    # 获取目录下所有文件并排序
-    files = sorted(os.listdir(input_dir))
+    for root, _, files in os.walk(input_dir):
+        # 跳过输出目录自身，避免死循环
+        if root.startswith(output_root):
+            continue
 
-    for filename in files:
-        input_path = os.path.join(input_dir, filename)
-        output_path = os.path.join(output_dir, filename)
+        # 计算相对路径，在输出目录保持同样结构
+        rel_path = os.path.relpath(root, input_dir)
+        output_dir = os.path.join(output_root, rel_path)
+        os.makedirs(output_dir, exist_ok=True)
 
-        # 只处理视频文件（简单判断扩展名）
-        if os.path.isfile(input_path) and filename.lower().endswith(('.mp4', '.mkv', '.avi', '.mov')):
-            print(f"正在压缩: {filename}")
-            subprocess.run([
-                "HandBrakeCLI", 
-                "-i", input_path, 
-                "-o", output_path,
-                "-e", "x264",  # 使用x264编码
-                "-q", "22",    # 质量值，18-28之间，数值越小质量越好（文件越大）
-                "-B", "160"    # 音频比特率
-            ])
-            print(f"完成: {filename}")
+        for filename in sorted(files):
+            input_path = os.path.join(root, filename)
+
+            # 去掉原扩展名，统一输出为 .mp4
+            base_name, _ = os.path.splitext(filename)
+            output_path = os.path.join(output_dir, base_name + ".mp4")
+
+            # 只处理视频文件
+            if filename.lower().endswith(('.mp4', '.mkv', '.avi', '.mov')):
+                # 如果输出文件已存在，跳过
+                if os.path.exists(output_path):
+                    print(f"跳过已存在: {output_path}")
+                    continue
+
+                print(f"正在压缩: {input_path} -> {output_path}")
+                subprocess.run([
+                    "HandBrakeCLI",
+                    "-i", input_path,
+                    "-o", output_path,
+                    "-e", "x264",   # 使用 x264 编码
+                    "-q", "22",     # 质量值，18-28之间，数值越小质量越好（文件越大）
+                    "-B", "160"     # 音频比特率
+                ])
+                print(f"完成: {output_path}")
+
+def Scheduled_Execution(hour, min, sec):
+    """在指定时间执行任务"""
+    import time
+    from datetime import datetime
+
+    while True:
+        now = datetime.now()
+        # 判断当前是否为指定时间
+        # if now.hour == hour and now.minute == min and now.second == sec:
+        if now.hour == hour:
+            break
+        else:
+            print(f"当前时间 {now.strftime('%H:%M:%S')}，等待到目标时间再执行任务...")
+        # 每分钟检测一次
+        time.sleep(60)
 
 if __name__ == "__main__":
-    compress_videos("/Users/jiangsai/Desktop/smc中阶课程")
+    # 指定时间执行
+    Scheduled_Execution(hour=9, min=0, sec=0)
 
+    compress_videos("/Users/jiangsai/Downloads/Deep Dive 足迹图")
 
-
-# # 批量压缩目录下所有视频
-# # brew install handbrake
-
-# import os
-# import subprocess
-
-# # ===== 配置部分 =====
-# # 输入目录
-# input_dir = "/Users/jiangsai/Desktop/smc中阶课程"
-# # 输出目录（自动新建）
-# output_dir = os.path.join(input_dir, "压缩Done")
-
-# # HandBrakeCLI 路径（如果在 PATH 里，可以直接写 "HandBrakeCLI"）
-# handbrake_cli = "HandBrakeCLI"
-
-# # 压缩参数（可以根据需求调整）
-# # -e x264  -> 使用x264编码
-# # -q 22    -> 质量值，18-28之间，数值越小质量越好（文件越大）
-# # -B 160   -> 音频比特率
-# encode_options = ["-e", "x264", "-q", "22", "-B", "160"]
-
-# # 创建输出目录
-# os.makedirs(output_dir, exist_ok=True)
-
-# # 遍历文件
-# for filename in os.listdir(input_dir):
-#     filepath = os.path.join(input_dir, filename)
-
-#     # 只处理视频文件（简单判断扩展名）
-#     if os.path.isfile(filepath) and filename.lower().endswith((".mp4", ".mkv", ".avi", ".mov")):
-#         output_path = os.path.join(output_dir, filename)
-
-#         cmd = [handbrake_cli, "-i", filepath, "-o", output_path] + encode_options
-#         print(f"正在压缩: {filename} ...")
-#         try:
-#             subprocess.run(cmd, check=True)
-#             print(f"✅ 完成: {output_path}")
-#         except subprocess.CalledProcessError:
-#             print(f"❌ 失败: {filename}")
+    # 执行完播放提示音
+    subprocess.run(["afplay", "/System/Library/Sounds/Sosumi.aiff"])

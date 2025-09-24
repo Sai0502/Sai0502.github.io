@@ -1,7 +1,8 @@
 #!/bin/bash
 
-LOCK_FILE="$HOME/.reminder.lock"
-SCRIPT_PATH="$HOME/Downloads/Python脚本/reminder.py"
+CURRENT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LOCK_FILE="$CURRENT_DIR/.reminder.lock"
+SCRIPT_PATH="$CURRENT_DIR/reminder.py"
 
 # 如果锁文件存在，读取其中的 PID
 if [ -f "$LOCK_FILE" ]; then

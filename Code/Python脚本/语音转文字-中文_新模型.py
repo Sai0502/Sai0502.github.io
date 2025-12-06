@@ -7,7 +7,8 @@ from faster_whisper import WhisperModel
 def transcribe_audio_file(model, input_path, output_path, language):
     start_time = time.time()  # 开始计时
 
-    segments, info = model.transcribe(input_path, language=language)
+    # segments, info = model.transcribe(input_path, language=language)   # 指定语言无法转录中英或者中日混杂的文件
+    segments, info = model.transcribe(input_path)   # 不指定语言可让模型自动识别语言
     full_text = ""
     for segment in segments:
         full_text += segment.text + "\n"
@@ -53,6 +54,6 @@ def cooking(input_path, whisper_model_name):
         print(f"提供的路径无效：{input_path}")
 
 if __name__ == "__main__":
-    input_path = '/Users/jiangsai/Downloads/mavnt011.mp3'
-    whisper_model_name = "base"  # 可用: "tiny", "base", "small", "medium", "large-v3"
+    input_path = '/Users/jiangsai/Downloads/30分钟搞定3家香港银行线上开户 保姆级港卡攻略 开户流程 网银注册 卡片邮寄...一次讲清楚.mp3'
+    whisper_model_name = "medium"  # 可用: "tiny", "base", "small", "medium", "large-v3"
     cooking(input_path, whisper_model_name)

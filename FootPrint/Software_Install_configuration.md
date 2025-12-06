@@ -61,9 +61,9 @@ VPN开启后Chrome可翻墙，终端不行
 >    ```bash
 >    # 创建 .zshrc 文件
 >    echo >> ~/.zshrc
->                      
+>                         
 >    open ~/.zshrc
->                      
+>                         
 >    # 在文件最后添加下面两句
 >    export http_proxy="http://127.0.0.1:8234" export https_proxy="http://127.0.0.1:8234"
 >    ```
@@ -193,14 +193,14 @@ VPN开启后Chrome可翻墙，终端不行
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->                             
+>                                 
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->                             
+>                                 
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 
@@ -465,3 +465,29 @@ VPN开启后Chrome可翻墙，终端不行
 > * 画质提升
 >
 >   ![image-20250319003024248](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20250319003024248.png)
+
+##### PDF Expert 禁止更新
+
+> PDF /Applications/PDF Expert.app/Contents/Info.plist
+>
+> ```
+> <key>SUFeedURL</key>
+> <string>https://downloads.pdfexpert.com/release/appcast.xml</string>
+> ```
+>
+> > 删除`https://downloads.pdfexpert.com/release/appcast.xml`
+>
+> ```
+> <key>SUEnableAutomaticChecks</key>
+> <string>YES</string>
+> ```
+>
+> > `YES`改成`NO`
+>
+> ```
+> <key>SUScheduledCheckInterval</key>
+> <string>86400</string>
+> ```
+>
+> > `86400`改成`3153600000`（100年）
+

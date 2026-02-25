@@ -1,5 +1,6 @@
 import random
 from pynput import keyboard
+import re
 
 PingJia = [
     "あ","い","う","え","お",
@@ -49,40 +50,58 @@ AoYin = [
     "りゃ", "リャ", "りゅ", "リュ", "りょ", "リョ"
 ]
 
-kana_list = PingJia + ZhuoHua + ZhuoHua + AoYin
-random.shuffle(kana_list)
+# 菜单映射
+menu = {
+    "1": ("平假名 PingJia", PingJia),
+    "2": ("片假名 PianJia", PianJia),
+    "3": ("浊音 ZhuoHua", ZhuoHua),
+    "4": ("拗音 AoYin", AoYin)
+}
 
-print("按空格键显示一个假名（无重复）。按 q 键退出。\n")
+def study(kana_list):
+    """进入学习模式"""
+    random.shuffle(kana_list)
+    print("按空格键显示一个假名（无重复）。按 ESC 键退出学习，返回选择界面。\n")
 
-def on_press(key):
-    global kana_list
-    try:
-        if key.char == "q":
-            print("已退出学习。")
-            return False  # 停止监听
-    except AttributeError:
-        # 特殊键（如空格）
+    def on_press(key):
+        nonlocal kana_list
+        # ESC 退出学习
+        if key == keyboard.Key.esc:
+            print("退出学习，返回选择界面。\n")
+            return False
+        # 空格显示假名
         if key == keyboard.Key.space:
             if kana_list:
                 kana = kana_list.pop()
                 print("👉", kana)
             else:
-                print("\n所有假名都已经显示完了！")
+                print("\n所有假名都已经显示完了！返回选择界面。\n")
                 return False
 
-with keyboard.Listener(on_press=on_press) as listener:
-    listener.join()
+    with keyboard.Listener(on_press=on_press) as listener:
+        listener.join()
 
-# print("按回车显示一个假名（无重复）。输入 q 退出。\n")
+def main():
+    while True:
+        print("请选择学习内容：")
+        for k, v in menu.items():
+            print(f"{k}. {v[0]}")
+        print("输入 q 退出程序。")
 
-# while kana_list:
-#     cmd = input()
-#     if cmd.lower() == "q":
-#         print("已退出学习。")
-#         break
+        choice = input("请输入编号：").strip()
+        # 去掉控制字符，只保留数字和字母
+        choice = re.sub(r"[^\w]", "", choice)
 
-#     kana = kana_list.pop()
-#     print("👉", kana)
+        if not choice:
+            continue
+        elif choice.lower() == "q":
+            print("已退出程序。")
+            break
+        elif choice in menu:
+            _, kana_list = menu[choice]
+            study(kana_list.copy())
+        else:
+            print("无效选择，请重新输入。\n")
 
-# if not kana_list:
-#     print("\n所有假名都已经显示完了！")
+if __name__ == "__main__":
+    main()

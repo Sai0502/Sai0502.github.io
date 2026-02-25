@@ -1,52 +1,32 @@
-import requests
-import datetime
-import subprocess
-import time
+import os
+from pydub import AudioSegment
 
-# 获取经济日历（这里用Trading Economics API的公开接口）
-API_URL = "https://api.tradingeconomics.com/calendar?c=guest:guest&f=json"
+# ====== 配置区 ======
+INPUT_DIR = "/Users/jiangsai/Downloads/孙宇晨-财富自由革命之路/待处理"    # 原始 MP3 文件夹
+OUTPUT_DIR = "/Users/jiangsai/Downloads/孙宇晨-财富自由革命之路/已处理"  # 输出文件夹
+CUT_MS = 15 * 1000                   # 前 1 分钟（毫秒）
+# ===================
 
-def get_today_events():
-    today = datetime.date.today().strftime("%Y-%m-%d")
-    events = []
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+for filename in os.listdir(INPUT_DIR):
+    if not filename.lower().endswith(".mp3"):
+        continue
+
+    input_path = os.path.join(INPUT_DIR, filename)
+    output_path = os.path.join(OUTPUT_DIR, filename)
+
     try:
-        resp = requests.get(API_URL, timeout=10)
-        data = resp.json()
-        for item in data:
-            if "date" not in item:
-                continue
-            if item["date"].startswith(today) and item.get("importance") == 3:  # 3 = 高影响
-                time_str = item.get("date", "").split("T")[-1][:5]  # 提取时间 HH:MM
-                country = item.get("country", "")
-                event = item.get("event", "")
-                events.append(f"{time_str} - {country}: {event}")
+        audio = AudioSegment.from_mp3(input_path)
+
+        if len(audio) <= CUT_MS:
+            print(f"⚠️ 跳过（音频不足1分钟）: {filename}")
+            continue
+
+        trimmed_audio = audio[CUT_MS:]
+        trimmed_audio.export(output_path, format="mp3")
+
+        print(f"✅ 已处理: {filename}")
+
     except Exception as e:
-        events.append(f"获取失败: {e}")
-    return events
-
-def send_notification(message):
-    script = f'display notification "{message}" with title "今日财经日历提醒"'
-    subprocess.run(["osascript", "-e", script])
-
-if __name__ == "__main__":
-    events = get_today_events()
-    if events:
-        msg = "\n".join(events[:5])  # 只显示前5个，避免太长
-    else:
-        msg = "今天没有高影响数据"
-    print(msg)
-
-
-    notify_times = ["19:00", "19:30", "20:00"]
-
-    while True:
-        now = datetime.datetime.now().strftime("%H:%M")
-        if now in notify_times:
-            events = get_today_events()
-            if events:
-                msg = "\n".join(events[:5])  # 只显示前5个，避免太长
-            else:
-                msg = "今天没有高影响数据"
-            send_notification(msg)
-            time.sleep(60)  # 避免同一分钟多次提醒
-        time.sleep(20)
+        print(f"❌ 处理失败 {filename}: {e}")

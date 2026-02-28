@@ -61,9 +61,9 @@ VPN开启后Chrome可翻墙，终端不行
 >    ```bash
 >    # 创建 .zshrc 文件
 >    echo >> ~/.zshrc
->                         
+>                            
 >    open ~/.zshrc
->                         
+>                            
 >    # 在文件最后添加下面两句
 >    export http_proxy="http://127.0.0.1:8234" export https_proxy="http://127.0.0.1:8234"
 >    ```
@@ -193,14 +193,14 @@ VPN开启后Chrome可翻墙，终端不行
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->                                 
+>                                     
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->                                 
+>                                     
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 
@@ -429,19 +429,25 @@ VPN开启后Chrome可翻墙，终端不行
 
 > 1. 关闭板载内存模式
 >
-> 2. DPI
+>    > 1. DPI
+>    >
+>    >    > 灵敏度 - 默认设置 - 2400
+>    >
+>    > 2. 侧键快捷键
+>    >
+>    >    > 1. 分配 -宏 - 新建宏 - 不重复 - 立即开始 - 记录按键 - 停止录制
+>    >    >
+>    >    >    > 1. 全屏左滑宏：control ⌃ + ArrowLift ←
+>    >    >    > 2. 全屏右滑宏：control ⌃ + ArrowRight →
+>    >    >    > 3. 窗口管理 宏：control ⌃ + ArrowUp ↑
+>    >    >
+>    >    > 2. 将新建的「全屏左滑宏」拖到侧上键；将新建的「全屏右滑宏」拖到侧下键
 >
->    > 灵敏度 - 默认设置 - 2400
+> 2. 开启板载内存模式
 >
-> 3. 侧键快捷键
->
->    > 分配 -宏 - 新建宏 - 不重复 - 立即开始 - 记录按键 - 停止录制
->
->    1. 窗口管理 宏：control ⌃ + ArrowUp ↑
->    2. 全屏左滑宏：control ⌃ + ArrowLift ←
->    3. 全屏右滑宏：control ⌃ + ArrowRight →
->
-> 4. 开启板载内存模式 - 点击 放入1 默认 - 选择桌面 默认 - 等待保存完成
+>    > 1. 设置 - 板载内存模式「关闭」->「开启」
+>    >
+>    >    > 点击 「放入1 默认」 - 选择「桌面 默认」 - 等待保存完成
 
 ##### Mac技巧
 

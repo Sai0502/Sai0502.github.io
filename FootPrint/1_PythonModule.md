@@ -1096,6 +1096,51 @@ ffmpeg -i input.mp4 -vcodec libx264 -crf 20 output.mp4
 ffmpeg -i input.mp4 -r 10 -b:a 32k output.mp4
 ```
 
+#### 9. 提高视频音量
+
+```python
+# 音量提升3倍
+ffmpeg -i "input.mp4" -af "volume=3.0" -c:v copy "output.mp4"
+
+import os
+import subprocess
+
+# ====== 配置 ======
+input_folder = "/path/to/your/videos"
+output_folder = os.path.join(input_folder, "output_videos")
+volume_factor = 3.0  # 音量倍数
+
+# 支持的视频格式
+video_extensions = (".mp4", ".mov", ".mkv", ".avi", ".flv", ".wmv")
+
+# ====== 创建输出目录 ======
+os.makedirs(output_folder, exist_ok=True)
+
+# ====== 遍历文件 ======
+for filename in os.listdir(input_folder):
+    if filename.lower().endswith(video_extensions):
+        input_path = os.path.join(input_folder, filename)
+        output_path = os.path.join(output_folder, filename)
+
+        print(f"处理: {filename}")
+
+        command = [
+            "ffmpeg",
+            "-i", input_path,
+            "-af", f"volume={volume_factor}",
+            "-c:v", "copy",
+            output_path
+        ]
+
+        try:
+            subprocess.run(command, check=True)
+            print(f"完成: {filename}\n")
+        except subprocess.CalledProcessError:
+            print(f"失败: {filename}\n")
+
+print("全部处理完成！")
+```
+
 #### 下载荔枝音频
 
 <img src="https://gitee.com/jiangsai0502/PicBedRepo/raw/master/20200729012642.png" style="zoom:50%;" />

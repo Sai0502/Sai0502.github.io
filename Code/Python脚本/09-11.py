@@ -1,32 +1,37 @@
 import os
-from pydub import AudioSegment
+import subprocess
 
-# ====== 配置区 ======
-INPUT_DIR = "/Users/jiangsai/Downloads/孙宇晨-财富自由革命之路/待处理"    # 原始 MP3 文件夹
-OUTPUT_DIR = "/Users/jiangsai/Downloads/孙宇晨-财富自由革命之路/已处理"  # 输出文件夹
-CUT_MS = 15 * 1000                   # 前 1 分钟（毫秒）
-# ===================
+# ====== 配置 ======
+input_folder = "/Users/jiangsai/Downloads/Trading/蜡烛商人【压缩】/07 周回顾"  # 改成你的视频文件夹路径
+output_folder = os.path.join(input_folder, "output_videos")
+volume_factor = 7.0  # 音量倍数
 
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+# 支持的视频格式
+video_extensions = (".mp4", ".mov", ".mkv", ".avi", ".flv", ".wmv")
 
-for filename in os.listdir(INPUT_DIR):
-    if not filename.lower().endswith(".mp3"):
-        continue
+# ====== 创建输出目录 ======
+os.makedirs(output_folder, exist_ok=True)
 
-    input_path = os.path.join(INPUT_DIR, filename)
-    output_path = os.path.join(OUTPUT_DIR, filename)
+# ====== 遍历文件 ======
+for filename in os.listdir(input_folder):
+    if filename.lower().endswith(video_extensions):
+        input_path = os.path.join(input_folder, filename)
+        output_path = os.path.join(output_folder, filename)
 
-    try:
-        audio = AudioSegment.from_mp3(input_path)
+        print(f"处理: {filename}")
 
-        if len(audio) <= CUT_MS:
-            print(f"⚠️ 跳过（音频不足1分钟）: {filename}")
-            continue
+        command = [
+            "ffmpeg",
+            "-i", input_path,
+            "-af", f"volume={volume_factor}",
+            "-c:v", "copy",
+            output_path
+        ]
 
-        trimmed_audio = audio[CUT_MS:]
-        trimmed_audio.export(output_path, format="mp3")
+        try:
+            subprocess.run(command, check=True)
+            print(f"完成: {filename}\n")
+        except subprocess.CalledProcessError:
+            print(f"失败: {filename}\n")
 
-        print(f"✅ 已处理: {filename}")
-
-    except Exception as e:
-        print(f"❌ 处理失败 {filename}: {e}")
+print("全部处理完成！")

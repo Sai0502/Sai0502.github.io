@@ -61,9 +61,9 @@ VPN开启后Chrome可翻墙，终端不行
 >    ```bash
 >    # 创建 .zshrc 文件
 >    echo >> ~/.zshrc
->                            
+>                               
 >    open ~/.zshrc
->                            
+>                               
 >    # 在文件最后添加下面两句
 >    export http_proxy="http://127.0.0.1:8234" export https_proxy="http://127.0.0.1:8234"
 >    ```
@@ -193,14 +193,14 @@ VPN开启后Chrome可翻墙，终端不行
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->                                     
+>                                         
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->                                     
+>                                         
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 
@@ -496,4 +496,16 @@ VPN开启后Chrome可翻墙，终端不行
 > ```
 >
 > > `86400`改成`3153600000`（100年）
+
+##### VPN自检流程 [教程](https://www.youtube.com/watch?v=_CMNgW3r_9g)
+
+1. 获取当前vpn的IP
+
+   ![image-20260404225014554](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20260404225014554.png)
+
+2. 检测IP
+
+   ![image-20260404225432899](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20260404225432899.png)
+
+##### VPS 搭建 VPN [教程](https://www.youtube.com/watch?v=MuWTmEiNe1g)
 

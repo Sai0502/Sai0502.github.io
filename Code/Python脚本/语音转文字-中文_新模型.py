@@ -54,6 +54,6 @@ def cooking(input_path, whisper_model_name):
         print(f"提供的路径无效：{input_path}")
 
 if __name__ == "__main__":
-    input_path = '/Users/jiangsai/Downloads/30分钟搞定3家香港银行线上开户 保姆级港卡攻略 开户流程 网银注册 卡片邮寄...一次讲清楚.mp3'
+    input_path = '/Users/jiangsai/Downloads/Trading/蜡烛商人【压缩】/07 周回顾'
     whisper_model_name = "medium"  # 可用: "tiny", "base", "small", "medium", "large-v3"
     cooking(input_path, whisper_model_name)

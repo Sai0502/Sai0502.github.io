@@ -336,7 +336,11 @@
 
 ##### 文献阅读：沙拉查词 + Alfred
 
-> [参考](https://zhuanlan.zhihu.com/p/113809716)
+> 方法1：最简易 直接调用沙拉查词的PDF 阅读器
+>
+> ![image-20260411220925840](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20260411220925840.png)
+>
+> 方法2：沙拉查词 + Alfred [参考](https://zhuanlan.zhihu.com/p/113809716)
 >
 > 1. 安装Chrome插件：沙拉查词
 >

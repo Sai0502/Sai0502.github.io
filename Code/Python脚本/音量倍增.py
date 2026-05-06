@@ -2,9 +2,9 @@ import os
 import subprocess
 
 # ====== 配置 ======
-input_folder = "/Users/jiangsai/Downloads/Trading/蜡烛商人【压缩】/07 周回顾"  # 改成你的视频文件夹路径
+input_folder = "/Users/jiangsai/Desktop/未命名文件夹"  # 改成你的视频文件夹路径
 output_folder = os.path.join(input_folder, "output_videos")
-volume_factor = 7.0  # 音量倍数
+volume_factor = 10.0  # 音量倍数
 
 # 支持的视频格式
 video_extensions = (".mp4", ".mov", ".mkv", ".avi", ".flv", ".wmv")

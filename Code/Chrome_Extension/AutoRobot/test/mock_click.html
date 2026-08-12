@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>AutoRobot1 Mock Click</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 220vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      display: grid;
+      gap: 20px;
+      justify-items: center;
+      padding-top: 160px;
+    }
+
+    button {
+      width: 220px;
+      height: 72px;
+      border: 0;
+      border-radius: 8px;
+      background: #1264d8;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    #scrollBox {
+      width: 260px;
+      height: 120px;
+      overflow: auto;
+      border: 2px solid #7c3aed;
+      border-radius: 8px;
+      background: #f7f3ff;
+    }
+
+    #scrollBoxInner {
+      height: 480px;
+      padding: 16px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <button id="target">目标按钮</button>
+    <input id="textTarget" type="text" placeholder="键盘测试">
+    <div id="scrollBox">
+      <div id="scrollBoxInner">内部滚动容器</div>
+    </div>
+  </main>
+  <script>
+    window.clickCount = 0;
+    document.getElementById("target").addEventListener("click", () => {
+      window.clickCount += 1;
+    });
+  </script>
+</body>
+</html>

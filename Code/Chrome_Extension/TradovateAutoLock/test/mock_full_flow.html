@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Mock Tradovate Full Lock Flow</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #050607;
+      color: #d7d9df;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .chart {
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 80px 70px;
+    }
+
+    .manual-lockout-button {
+      position: fixed;
+      top: 18px;
+      left: 292px;
+      width: 330px;
+      height: 64px;
+      border: 1px solid #5d4214;
+      border-radius: 8px;
+      background: #111419;
+      color: #d5d8df;
+      font-size: 26px;
+    }
+
+    .account-strip {
+      position: fixed;
+      top: 18px;
+      left: 670px;
+      display: grid;
+      grid-template-columns: 130px 150px;
+      gap: 6px 18px;
+      color: #aab0ba;
+      z-index: 0;
+    }
+
+    .account-strip .value {
+      color: #d6d9df;
+    }
+
+    .account-detail-panel {
+      position: fixed;
+      top: 98px;
+      left: 670px;
+      display: grid;
+      grid-template-columns: 150px 150px 150px;
+      gap: 8px 20px;
+      color: #aab0ba;
+      z-index: 0;
+    }
+
+    .account-detail-panel .metric {
+      display: grid;
+      gap: 6px;
+    }
+
+    .account-detail-panel .value {
+      color: #d6d9df;
+      font-size: 22px;
+    }
+
+    .shade {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.70);
+      display: none;
+      z-index: 1;
+    }
+
+    .manual-lockout-modal {
+      position: fixed;
+      left: 42px;
+      top: 62px;
+      width: 850px;
+      min-height: 730px;
+      border-radius: 14px;
+      background: #111419;
+      color: #b9bcc4;
+      padding: 48px 50px;
+      box-sizing: border-box;
+      display: none;
+      z-index: 2;
+    }
+
+    body.modal-open .shade,
+    body.modal-open .manual-lockout-modal {
+      display: block;
+    }
+
+    h1 {
+      margin: 0 0 72px;
+      font-size: 32px;
+      color: #d4d6dc;
+    }
+
+    .close {
+      position: absolute;
+      top: 48px;
+      right: 52px;
+      font-size: 46px;
+      color: #5e646e;
+    }
+
+    .lead {
+      font-size: 28px;
+      font-weight: 800;
+      color: #c9ccd3;
+    }
+
+    ul {
+      margin: 34px 0 70px;
+      padding-left: 32px;
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.9;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 280px 450px;
+      align-items: start;
+      gap: 22px;
+      margin-bottom: 86px;
+    }
+
+    .label {
+      font-size: 28px;
+      font-weight: 800;
+      color: #aeb3bd;
+      padding-top: 26px;
+    }
+
+    .manual-lockout-modal__dropdown-select {
+      width: 450px;
+      min-height: 80px;
+      border: 0;
+      border-radius: 6px;
+      background: #444a53;
+      color: #d1d4db;
+      font-size: 29px;
+      font-weight: 800;
+      padding: 8px 24px;
+      box-sizing: border-box;
+      text-align: left;
+    }
+
+    .manual-lockout-modal__dropdown-menu {
+      width: 450px;
+      background: #414750;
+      display: none;
+    }
+
+    .dropdown-open .manual-lockout-modal__dropdown-menu {
+      display: block;
+    }
+
+    .manual-lockout-modal__dropdown-option {
+      display: block;
+      width: 100%;
+      min-height: 104px;
+      border: 0;
+      background: transparent;
+      color: #d7d9df;
+      text-align: left;
+      padding: 0 78px;
+      font-size: 30px;
+    }
+
+    .end-time {
+      margin-top: 14px;
+      font-size: 28px;
+      font-weight: 800;
+      color: #b0b3bc;
+    }
+
+    .manual-lockout-modal__actions {
+      display: flex;
+      gap: 16px;
+      margin-left: 330px;
+    }
+
+    .manual-lockout-modal__button--warning {
+      width: 244px;
+      height: 64px;
+      border: 0;
+      border-radius: 8px;
+      background: linear-gradient(#ff9b0d, #d57900);
+      color: #17110a;
+      font-size: 28px;
+    }
+
+    .cancel {
+      width: 164px;
+      height: 64px;
+      border: 0;
+      border-radius: 8px;
+      background: #444a53;
+      color: #c2c6ce;
+      font-size: 28px;
+    }
+
+    .confirmation-modal {
+      position: fixed;
+      left: 370px;
+      top: 240px;
+      width: 560px;
+      padding: 36px;
+      border-radius: 12px;
+      background: #151920;
+      display: none;
+      z-index: 50;
+    }
+
+    body.confirm-open .confirmation-modal {
+      display: block;
+    }
+
+    .confirmation-modal__button--confirm {
+      width: 260px;
+      height: 60px;
+      border: 0;
+      border-radius: 8px;
+      background: #ff3434;
+      color: white;
+      font-size: 22px;
+    }
+  </style>
+</head>
+<body>
+  <div class="chart"></div>
+  <button class="manual-lockout-button" title="手动锁定" type="button">手动锁定</button>
+  <div class="account-strip">
+    <div>账户</div>
+    <div>LFE02567750200006</div>
+    <div>股权</div>
+    <div class="value" data-mock-equity>25000.00 USD</div>
+  </div>
+  <div class="account-detail-panel">
+    <div class="metric">
+      <div>股权</div>
+      <div>USD</div>
+      <div class="value" data-mock-detail-equity>25,000.00</div>
+    </div>
+    <div class="metric">
+      <div>未平仓损益</div>
+      <div class="value">0.00</div>
+    </div>
+    <div class="metric">
+      <div>总损益</div>
+      <div class="value" data-mock-total-pnl>0.00</div>
+    </div>
+  </div>
+  <div class="shade"></div>
+  <div class="manual-lockout-modal in modal" role="dialog">
+    <div class="close">×</div>
+    <h1>锁定所有模拟账户的交易权限</h1>
+    <div class="lead">当您锁定交易时:</div>
+    <ul>
+      <li>所有与您账户关联的模拟账户将被锁定</li>
+      <li>所有未平仓头寸将被立即平仓</li>
+      <li>无法下达新的交易</li>
+      <li>交易仅会在达到设定的时间限制后解锁</li>
+    </ul>
+    <div class="form-row">
+      <div class="label">选择锁定时间</div>
+      <div class="manual-lockout-modal__dropdown-container">
+        <button class="manual-lockout-modal__dropdown-select" type="button">
+          <span class="manual-lockout-modal__dropdown-placeholder">选择时间</span>
+        </button>
+        <div class="manual-lockout-modal__dropdown-menu">
+          <button class="manual-lockout-modal__dropdown-option" type="button">交易日结束（中部标准时间下午4点）</button>
+          <button class="manual-lockout-modal__dropdown-option" type="button">15 分钟</button>
+          <button class="manual-lockout-modal__dropdown-option" type="button">30 分钟</button>
+        </div>
+        <div class="end-time">锁定结束时间： 4:00pm（CST）</div>
+      </div>
+    </div>
+    <div class="manual-lockout-modal__actions">
+      <button class="MuiButton-contained MuiButton-root MuiButtonBase-root manual-lockout-modal__button manual-lockout-modal__button--warning" type="button">
+        <span class="MuiButton-label">锁定交易</span>
+      </button>
+      <button class="cancel" type="button">撤销</button>
+    </div>
+  </div>
+  <div class="confirmation-modal" role="dialog">
+    <p>确认锁定交易？</p>
+    <button class="confirmation-modal__button confirmation-modal__button--confirm" type="button">是的，锁定交易</button>
+  </div>
+  <script>
+    document.querySelector('.manual-lockout-button').addEventListener('click', () => {
+      document.body.classList.add('modal-open');
+    });
+    document.querySelector('.manual-lockout-modal').addEventListener('click', event => {
+      event.stopPropagation();
+    });
+    document.querySelector('.shade').addEventListener('click', () => {
+      document.body.classList.remove('modal-open');
+    });
+    document.querySelector('.manual-lockout-modal__dropdown-select').addEventListener('click', () => {
+      document.querySelector('.manual-lockout-modal__dropdown-container').classList.toggle('dropdown-open');
+    });
+    document.querySelectorAll('.manual-lockout-modal__dropdown-option').forEach(button => {
+      button.addEventListener('click', () => {
+        document.querySelector('.manual-lockout-modal__dropdown-placeholder').textContent = button.textContent;
+        document.querySelector('.manual-lockout-modal__dropdown-container').classList.remove('dropdown-open');
+      });
+    });
+    document.querySelector('.manual-lockout-modal__button--warning').addEventListener('click', () => {
+      document.body.classList.add('confirm-open');
+    });
+  </script>
+</body>
+</html>

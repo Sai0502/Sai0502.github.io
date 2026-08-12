@@ -1,0 +1,65 @@
+{
+  "manifest_version": 3,
+  "name": "TradovateAutoLock",
+  "version": "0.1.0",
+  "description": "Monitor Tradovate PnL and automatically lock trading when thresholds are hit.",
+  "permissions": [
+    "activeTab",
+    "alarms",
+    "notifications",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://trader.tradovate.com/*"
+  ],
+  "action": {
+    "default_title": "TradovateAutoLock",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://trader.tradovate.com/*"
+      ],
+      "js": [
+        "ws-bridge.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://trader.tradovate.com/*"
+      ],
+      "js": [
+        "ws-hook.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://trader.tradovate.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

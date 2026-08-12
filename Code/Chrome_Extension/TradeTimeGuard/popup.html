@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TradeTimeGuard</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="app">
+      <header class="header">
+        <h1>TradeTimeGuard</h1>
+        <span class="version">v2026.07.02.3</span>
+      </header>
+
+      <section class="toolbar">
+        <button id="addRule" type="button">新增网址</button>
+      </section>
+
+      <section id="rules" class="rules"></section>
+
+      <details class="diagnostics">
+        <summary>
+          <span>诊断包</span>
+          <button id="copySummary" type="button" class="small-button">复制 Summary</button>
+        </summary>
+        <div class="diagnostic-actions">
+          <button id="copyDetailed" type="button" class="small-button secondary">复制 Detailed</button>
+          <button id="copyRaw" type="button" class="small-button danger">复制 Raw</button>
+        </div>
+        <p class="diagnostic-note">Raw 可能包含较多页面和配置片段，只有需要时再复制。</p>
+      </details>
+
+      <p id="status" class="status" role="status"></p>
+    </main>
+
+    <template id="ruleTemplate">
+      <article class="rule">
+        <div class="rule-top">
+          <label class="enabled">
+            <input class="field-enabled" type="checkbox">
+            <span>启用</span>
+          </label>
+          <button class="delete" type="button">删除</button>
+        </div>
+
+        <label>
+          <span>网址</span>
+          <input class="field-url" type="text" placeholder="https://example.com">
+        </label>
+
+        <div class="time-row">
+          <label class="time-field">
+            <input class="field-start" type="time">
+          </label>
+          <span class="time-separator">-</span>
+          <label class="time-field">
+            <input class="field-end" type="time">
+          </label>
+        </div>
+
+        <label>
+          <span>文案</span>
+          <textarea class="field-message" rows="2" placeholder="当前时段禁止开仓"></textarea>
+        </label>
+
+        <p class="lock-note">当前网址正在锁定中，暂时不能修改或删除这条设置。</p>
+      </article>
+    </template>
+
+    <template id="rawConfirmTemplate">
+      <div class="raw-warning">
+        Raw 诊断包体积较大，可能包含页面片段和完整配置。确认复制？
+      </div>
+    </template>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

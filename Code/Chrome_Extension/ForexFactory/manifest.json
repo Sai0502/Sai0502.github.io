@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Forex Factory Weekly News",
+  "version": "0.1.0",
+  "description": "Fetch this week's or next week's key Forex Factory events from the extension popup.",
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.forexfactory.com/*",
+    "https://nfs.faireconomy.media/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Forex Factory Weekly News",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

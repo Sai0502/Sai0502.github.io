@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Forex Factory Weekly News</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup">
+      <header class="popup-header">
+        <h1 class="popup-title">周金融信息</h1>
+        <div id="build-label" class="popup-build">ForexFactoryWeekOverlay v2026_0802_235500</div>
+      </header>
+
+      <section class="popup-toolbar">
+        <section class="popup-loading" id="status">正在获取中...</section>
+        <button id="refresh-data" class="popup-refresh" type="button">重新获取</button>
+      </section>
+
+      <section class="popup-card popup-result-card">
+        <div class="popup-days" id="result-days"></div>
+      </section>
+
+      <section class="popup-card popup-settings-card">
+        <label class="popup-field">
+          <span>包含 EUR</span>
+          <input type="checkbox" id="include-eur">
+        </label>
+      </section>
+
+      <details class="popup-card popup-debug-card">
+        <summary>
+          调试信息
+          <button id="copy-debug" type="button">复制</button>
+        </summary>
+        <pre id="debug-output" class="popup-debug-output"></pre>
+      </details>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+  </html>

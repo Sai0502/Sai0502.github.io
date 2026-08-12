@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tradovate PnL Auto Lock</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <h1 id="appTitle">Tradovate PL Auto Lock v2026_0630_022107</h1>
+  </header>
+
+  <main id="panelContent">
+    <div id="pageWarning" class="page-warning hidden" aria-live="polite">
+      <strong>当前不是Tradovate页</strong>
+      <span>该插件只用于Tradovate风控</span>
+    </div>
+
+    <div id="dataLoadingOverlay" class="data-loading-overlay hidden" aria-live="polite">
+      <strong>数据获取中……</strong>
+      <button id="copySummaryFromOverlay" class="tiny" type="button">复制 Summary</button>
+    </div>
+
+    <section id="status"></section>
+
+    <section class="settings-section">
+      <div id="lockableSettings" class="lockable-settings">
+        <div class="setting-pair-row">
+          <label class="setting-row compact-setting-row">
+            <span>日亏损上限</span>
+            <input id="dailyLossLimit" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+          </label>
+          <label class="setting-row compact-setting-row">
+            <span>日盈利上限</span>
+            <input id="dailyProfitTarget" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+          </label>
+        </div>
+        <label class="setting-row">
+          <span>自动扫描间隔（秒）</span>
+          <input id="scanIntervalSeconds" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+        </label>
+        <div class="setting-row setting-row-wide trade-count-row">
+          <label class="setting-check-inline">
+            <span>日交易次数上限</span>
+            <input id="tradeCountLockEnabled" type="checkbox">
+          </label>
+          <input id="dailyEntryLimit" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="今日开仓上限" placeholder="今日开仓上限">
+        </div>
+        <div class="setting-row setting-row-wide schedule-time-row">
+          <label class="setting-check-inline">
+            <span>定时锁定账户</span>
+            <input id="scheduledLockEnabled" type="checkbox">
+          </label>
+          <input id="scheduledLockTime" type="time" autocomplete="off">
+        </div>
+        <label class="setting-row setting-row-wide schedule-message-row">
+          <span>定时锁定文案</span>
+          <input id="scheduledLockMessage" type="text" autocomplete="off">
+        </label>
+        <label class="setting-row setting-row-wide">
+          <span>锁定周期</span>
+          <select id="lockDuration">
+            <option value="end_of_day">交易日结束 - NY 16:00</option>
+            <option value="15m">15分钟</option>
+            <option value="30m">30分钟</option>
+            <option value="1h">1小时</option>
+          </select>
+        </label>
+      </div>
+      <div class="action-row">
+        <button id="lockSettings" class="warning" type="button">锁定设置</button>
+        <button id="executeLock" class="danger" type="button">立刻锁定账户</button>
+      </div>
+      <p id="saveStatus" class="save-status" aria-live="polite"></p>
+    </section>
+
+    <details id="diagnosticDetails" class="diagnostics-section">
+      <summary class="diagnostic-summary">
+        <span>诊断包</span>
+        <button id="copySummary" class="tiny" type="button">复制 Summary</button>
+      </summary>
+      <div class="diagnostic-actions">
+        <button id="copySummaryExpanded" class="tiny" type="button">复制 Summary</button>
+        <button id="copyDetailed" class="tiny" type="button">复制 Detailed</button>
+        <button id="copyRaw" class="tiny raw" type="button">复制 Raw</button>
+      </div>
+      <pre id="diagnosticPreview" class="diagnostic-preview">展开后自动生成诊断包预览。</pre>
+    </details>
+
+    <section>
+      <h2>功能测试（锁定账户的测试流程）</h2>
+      <div class="button-row">
+        <button id="start" type="button">开始测试</button>
+        <button id="next" class="secondary hidden" type="button">下一步</button>
+      </div>
+      <div id="nudge" class="nudge hidden" aria-label="调整当前定位">
+        <div class="pad pad-four">
+          <button class="tiny" data-dx="0" data-dy="-1" type="button">上</button>
+          <button class="tiny" data-dx="0" data-dy="1" type="button">下</button>
+          <button class="tiny" data-dx="-1" data-dy="0" type="button">左</button>
+          <button class="tiny" data-dx="1" data-dy="0" type="button">右</button>
+        </div>
+        <button id="resetOffset" class="tiny reset" type="button">恢复默认偏移</button>
+      </div>
+      <button id="clear" class="ghost hidden" type="button">退出测试</button>
+      <p id="flowStatus" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "AutoRobot",
+  "description": "Record, edit, and replay simple browser click automation scripts.",
+  "version": "0.2.0",
+  "action": {
+    "default_title": "AutoRobot"
+  },
+  "side_panel": {
+    "default_path": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "activeTab",
+    "sidePanel",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

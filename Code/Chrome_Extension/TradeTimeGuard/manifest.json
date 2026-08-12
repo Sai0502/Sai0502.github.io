@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "TradeTimeGuard",
+  "version": "2026.7.2.3",
+  "version_name": "2026.07.02.3",
+  "description": "在指定交易网站和指定时段显示不可关闭的风控提醒浮层。",
+  "permissions": ["storage", "tabs"],
+  "action": {
+    "default_title": "TradeTimeGuard",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://trader.tradovate.com/*",
+        "https://topstepx.com/*",
+        "https://*.topstepx.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

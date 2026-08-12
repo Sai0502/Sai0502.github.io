@@ -1,0 +1,57 @@
+{
+  "manifest_version": 3,
+  "name": "TVBreakEven",
+  "version": "0.1.0",
+  "description": "Monitor a TradingView position and move the stop to breakeven after a trigger price is touched.",
+  "permissions": [
+    "activeTab",
+    "notifications",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://*.tradingview.com/*",
+    "https://*.tradovateapi.com/*"
+  ],
+  "action": {
+    "default_title": "TVBreakEven",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.tradingview.com/*"
+      ],
+      "js": [
+        "data/contracts.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.tradingview.com/*"
+      ],
+      "js": [
+        "page/tradovate-bridge.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TVBreakEven</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <h1>TVBreakEven</h1>
+    <span>TradingView 推保</span>
+  </header>
+
+  <main>
+    <section id="pageWarning" class="warning hidden">
+      <strong>当前不是 TradingView 图表页</strong>
+      <span>该工具只在 tradingview.com 页面运行</span>
+      <code id="pageWarningUrl"></code>
+    </section>
+
+    <section class="status-grid">
+      <div>
+        <span>当前价格</span>
+        <strong id="currentPrice">-</strong>
+      </div>
+      <div>
+        <span>状态</span>
+        <strong id="stateText">未启动</strong>
+      </div>
+    </section>
+
+    <section>
+      <label class="row">
+        <span>方向</span>
+        <select id="side">
+          <option value="long">多单 Long</option>
+          <option value="short">空单 Short</option>
+        </select>
+      </label>
+      <label class="row">
+        <span>触发价</span>
+        <input id="triggerPrice" type="text" inputmode="decimal" placeholder="例如 4568.5">
+      </label>
+      <label class="row">
+        <span>推保价</span>
+        <input id="breakevenPrice" type="text" inputmode="decimal" placeholder="默认填开仓价">
+      </label>
+      <label class="row">
+        <span>执行方式</span>
+        <select id="executionMode">
+          <option value="assist">辅助模式：触发后报警并高亮止损</option>
+          <option value="auto">自动模式：尝试移动 TradingView 止损</option>
+        </select>
+      </label>
+      <div class="button-row">
+        <button id="pickLine" type="button">触发价线</button>
+        <button id="pickBreakevenLine" type="button">推保价线</button>
+      </div>
+      <div class="button-row">
+        <button id="showPanel" type="button">常驻面板</button>
+        <button id="refresh" class="secondary" type="button">读取当前页</button>
+      </div>
+      <div class="button-row">
+        <button id="start" class="danger" type="button">启动监控</button>
+        <button id="stop" class="secondary" type="button">停止</button>
+      </div>
+      <p id="saveStatus"></p>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>识别信息</h2>
+        <button id="copySnapshot" class="tiny" type="button">复制</button>
+      </div>
+      <pre id="snapshot">还没有读取。</pre>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>日志</h2>
+        <button id="copyLogs" class="tiny" type="button">复制</button>
+      </div>
+      <div id="logs" class="logs"></div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>调试信息</h2>
+        <button id="copyDebug" class="tiny" type="button">复制</button>
+      </div>
+      <pre id="debugOutput">还没有调试信息。</pre>
+    </section>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

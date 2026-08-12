@@ -136,65 +136,12 @@
       > > 4. ChatGPT iOS端内购时自动扣礼品卡金额
       >
 
-1. GitHub + PicGo + Typora搭建图床
-
-      > 1. 创建GitHub图床
-      >
-      >    > 创建的token只展示一次，要好好保存
-      >
-      >    ![image-20241223100207621](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20241223100207621.png)
-      >
-      > 2. 配置PicGo
-      >
-      >    > * 设定仓库名的时候，是按照“账户名/仓库名”的格式填写
-      >    >
-      >    >   * 如 jiangsai0502/PicBedRepo
-      >    >
-      >    > * 分支名统一填写“master”
-      >    >
-      >    > * 将之前的Token黏贴在这里：`74d803fcee14a9c36a8f1f387e5085446c2489f1`
-      >    >
-      >    > * 存储路径可以写成img/，这样会在repository下创建一个“img”文件夹
-      >    >
-      >    > * 自定义域名的作用是，在上传图片后成功后，PicGo会将“自定义域名+上传的图片名”生成的访问链接，放到剪切板上https://raw.githubusercontent.com/账户名/仓库名/分支名，自定义域名需要按照这样去填写
-      >    >
-      >    >   * 如https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master
-      >    >
-      >    > * PicGo报错
-      >    >
-      >    >   ![image-20241107173202457](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20241107173202457.png)
-      >
-      > 3. Typora自动上传
-      >
-      >    > Typora到语言必须调成中文，上传服务才能看到PicGo.app
-      >
-      >    ![image-20240504172744911](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202405041727992.png)
-
-1. Typora设置
-
-      > 1. 展示设置：增加行宽
-      >
-      >    > ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202312161642913.png)
-      >
-      > 2. 打印设置
-      >
-      >    1. 页边距
-      >
-      >       > ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202310261112999.png)
-      >
-      >    2. [行距](https://www.twblogs.net/a/5db288f8bd9eee310d9fd66c/?lang=zh-cn)
-      >
-      >       > 1. 微调`body`中的`line-height`参数
-      >       > 2. 关闭文件重新打开，修改即可生效
-      >       >
-      >       > ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202310261109296.png)
-
 1. Typora图片左对齐
 
       ```html
       <img src="https://xxx" align='left' style="zoom:25%;" />
       ```
-
+      
 1. Mac创建双击执行脚本
 
       > 1. 新建文件`command`文件

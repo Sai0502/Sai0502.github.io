@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AutoRobot1</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div>
+          <h1>AutoRobot1</h1>
+          <p id="subtitle">脚本列表</p>
+        </div>
+        <button id="backButton" class="icon-button hidden" title="返回">←</button>
+      </header>
+
+      <section id="listView" class="view">
+        <div id="scriptList" class="script-list"></div>
+        <button id="newScriptButton" class="primary-button">新增脚本</button>
+      </section>
+
+      <section id="editorView" class="view hidden">
+        <div class="footer-actions top-actions">
+          <button id="saveButton" class="primary-button">保存</button>
+          <button id="cancelButton" class="secondary-button">不保存</button>
+        </div>
+
+        <label class="field">
+          <span>脚本名</span>
+          <input id="scriptNameInput" type="text" placeholder="例如：打开报价页">
+        </label>
+
+        <div class="toolbar">
+          <button id="recordButton" class="primary-button">开始录制动作</button>
+          <button id="stopRecordButton" class="secondary-button hidden">停止录制</button>
+        </div>
+
+        <div class="hint">
+          录制时在页面上点击目标位置。左键和右键都会记录，点击位置与次数可在下方修改。
+        </div>
+
+        <div id="actionList" class="action-list"></div>
+      </section>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

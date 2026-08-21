@@ -227,6 +227,24 @@ label.setting-row {
   gap: 22px;
 }
 
+.second-pair-row {
+  grid-template-columns: 1.25fr 1fr;
+  gap: 8px;
+}
+
+.second-pair-row .trade-count-row {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.second-pair-row label.compact-setting-row {
+  grid-template-columns: auto 56px;
+  gap: 4px;
+}
+
+.second-pair-row label.compact-setting-row span {
+  white-space: nowrap;
+}
+
 label.compact-setting-row {
   grid-template-columns: minmax(76px, 1fr) 72px;
   gap: 4px;
@@ -234,14 +252,6 @@ label.compact-setting-row {
 
 label.setting-row-wide {
   grid-template-columns: 74px minmax(0, 1fr);
-}
-
-.schedule-time-row {
-  display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 0;
 }
 
 .trade-count-row {
@@ -269,16 +279,6 @@ label.setting-row-wide {
   min-height: 18px;
   justify-self: start;
   accent-color: #f6c34a;
-}
-
-.schedule-message-row {
-  grid-template-columns: 86px minmax(0, 1fr);
-}
-
-label.setting-row:has(#scanIntervalSeconds) {
-  grid-template-columns: 132px 74px;
-  justify-content: start;
-  gap: 6px;
 }
 
 label.check {

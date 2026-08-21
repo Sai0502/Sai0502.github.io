@@ -5,6 +5,7 @@ const DEFAULT_STATE = {
   side: 'long',
   executionMode: 'assist',
   triggered: false,
+  triggerFailed: false,
   lastCurrentPrice: null,
   lastCurrentPriceSource: '',
   lastSnapshot: null,
@@ -30,6 +31,7 @@ chrome.runtime.onStartup.addListener(() => {
   chrome.storage.local.set({
     enabled: false,
     triggered: false,
+    triggerFailed: false,
     lastExecutionResult: null
   }).catch(() => {});
 });

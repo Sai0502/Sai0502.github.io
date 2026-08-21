@@ -126,48 +126,6 @@
       > | ------------------------------------------------------------ | ------------------------------------------------------------ |
       > | ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/20210812184958.png) | ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/20210812185049.png) |
 
-1. 购买ChatGPT4
-
-      > 方式一：[按次购买，每次买一个月](https://www.youtube.com/watch?v=kkl2YPO33qc) ，[教程](https://hailangya.com/articles/2021/04/02/apple-gift-card/)
-      >
-      > > 1. 注册Apple美国免税洲账号
-      > > 2. 办理招商双币信用卡
-      > > 3. Apple官网使用信用卡购买礼品卡，送给自己的美区Apple账号
-      > > 4. ChatGPT iOS端内购时自动扣礼品卡金额
-      >
-
-1. Typora图片左对齐
-
-      ```html
-      <img src="https://xxx" align='left' style="zoom:25%;" />
-      ```
-      
-1. Mac创建双击执行脚本
-
-      > 1. 新建文件`command`文件
-      >
-      >    `touch 重启音频服务.command`
-      >
-      > 2. 使用`Sublime Text`打开`重启音频服务.command`文件
-      >
-      >    ```
-      >    #!/bin/bash
-      >    sudo killall coreaudiod
-      >    ```
-      >
-      > 3. 文件授权
-      >
-      >    `chmod +x 重启音频服务.command`
-
-1. chrome 书签&插件同步不及时
-
-      > 手动强制同步
-      >
-      > 1. 架梯子
-      > 2. 地址栏输入：chrome://sync-internals
-      > 3. 中间那列中下方，点击“Stop Sync (Keep Data)”，之后点击“Request Start”
-      > 4. 两个设备上的Chrome都进行一次这个操作
-
 1. 快捷指令写日记
 
       > 1. 手动创建指令，用于调试
@@ -185,17 +143,6 @@
       >       ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202309201506823.png)
       >
       >    ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202309201505769.png)
-
-1. Sublime Text在非空行且没有标点符号的行末添加句号
-
-      > `(?<![。，？！；：）])(?<=\S)$` 替换 `\0。`
-
-1. Flow番茄钟
-
-      >
-      > flow 休息前的叮一声可替换Keep录屏提示音（[MP3转aiff后修改后缀为aif](https://www.freeconvert.com/zh/aif-converter)）
-      >
-      > /Applications/Flow.app/Contents/Resources/Flow.aif
 
 1. 自制番茄钟
 

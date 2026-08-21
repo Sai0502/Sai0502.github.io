@@ -24,7 +24,7 @@
     }
   };
   const PANEL_ID = 'tvbe-side-panel';
-  const VERSION_STAMP = '20260630174930';
+  const VERSION_STAMP = '20260819192000';
   const PRICE_RE = /[-+−]?(?:\d{1,3}(?:,\d{3})+|\d{3,7})(?:\.\d+)?/g;
 
   let monitorTimer = null;
@@ -1096,22 +1096,65 @@
   }
 
   async function moveTradovateStopToPrice(settings) {
-    const stored = await safeStorageGet({ lastOrderSnapshot: null, lastSnapshot: null });
+    // 改单前重新请求一次桥接状态（超时放宽到 2 秒），避免依赖可能过期的存储快照
+    const freshBridge = await requestTradovateState(2000).catch(() => null);
+    let stored = await safeStorageGet({ lastOrderSnapshot: null, lastSnapshot: null });
+    let order = stored.lastOrderSnapshot || null;
+
+    if (freshBridge && freshBridge.auth && freshBridge.auth.loggedIn) {
+      // 从新鲜桥接状态重新匹配当前图表订单
+      const freshOrder = pickActiveOrderSnapshot(freshBridge);
+      if (freshOrder && freshOrder.stopOrderId) {
+        order = freshOrder;
+        await safeStorageSet({ lastOrderSnapshot: freshOrder });
+      }
+      // 确保连接状态快照是最新的
+      if (!stored.lastSnapshot || !stored.lastSnapshot.bridgeStatus || !stored.lastSnapshot.bridgeStatus.loggedIn) {
+        const freshSnapshot = {
+          bridgeStatus: {
+            loggedIn: true,
+            accounts: Array.isArray(freshBridge.accounts) ? freshBridge.accounts.length : 0,
+            accountStateCount: freshBridge.state ? Object.keys(freshBridge.state).length : 0,
+            ts: freshBridge.ts || Date.now()
+          },
+          textHints: { hasTradovate: true, hasPaperTrading: false }
+        };
+        stored = { ...stored, lastSnapshot: freshSnapshot };
+        await safeStorageSet({ lastSnapshot: freshSnapshot });
+      }
+    }
+
     const connection = getConnectionStatus(stored.lastSnapshot || {});
     if (connection.key !== 'tradovate') {
+      await addDebug('moveStop:connectionNotTradovate', {
+        connectionKey: connection.key,
+        hasFreshBridge: Boolean(freshBridge),
+        freshLoggedIn: Boolean(freshBridge && freshBridge.auth && freshBridge.auth.loggedIn),
+        storedBridge: stored.lastSnapshot && stored.lastSnapshot.bridgeStatus
+      });
       return { ok: false, reason: '自动改单当前只支持已连接 Tradovate；Paper Trading 暂未找到稳定改单接口' };
     }
-    const order = stored.lastOrderSnapshot || null;
     if (!order) return { ok: false, reason: '没有读到当前持仓订单，不能确定要修改哪一张止损单' };
     if (!order.stopOrderId) return { ok: false, reason: '没有读到止损单 ID，不能自动改单' };
     if (!order.accountId) return { ok: false, reason: '没有读到账号 ID，不能自动改单' };
-    const result = await requestBridge('modify-stop-order', {
+
+    // 改单调用，失败时重试一次
+    let result = await requestBridge('modify-stop-order', {
       accountId: order.accountId,
       orderId: order.stopOrderId,
       stopPrice: settings.breakevenPrice,
       rawOrder: order.rawStopOrder || null
-    }, 'modify-stop-order-result', 6000);
-    if (!result) return { ok: false, reason: 'Tradovate 桥接无响应' };
+    }, 'modify-stop-order-result', 8000);
+    if (!result) {
+      await addDebug('moveStop:retryAfterNoResponse', { orderId: order.stopOrderId, accountId: order.accountId });
+      result = await requestBridge('modify-stop-order', {
+        accountId: order.accountId,
+        orderId: order.stopOrderId,
+        stopPrice: settings.breakevenPrice,
+        rawOrder: order.rawStopOrder || null
+      }, 'modify-stop-order-result', 8000);
+    }
+    if (!result) return { ok: false, reason: 'Tradovate 桥接无响应（已重试一次）' };
     if (!result.ok) return { ok: false, reason: result.error || 'Tradovate 改止损返回失败', detail: result };
     const verify = await refreshOrderSnapshot().catch(() => null);
     const newStop = verify && verify.order ? Number(verify.order.stopPrice) : null;
@@ -1138,6 +1181,7 @@
       side: 'long',
       executionMode: 'auto',
       triggered: false,
+      triggerFailed: false,
       startedAt: null,
       triggeredAt: null,
       lastCurrentPrice: null,
@@ -1164,7 +1208,7 @@
     const panel = document.getElementById(PANEL_ID);
     if (!panel) return;
     const data = await getPanelData();
-    const stateText = data.enabled ? '监控中' : '未启动';
+    const stateText = data.enabled ? '监控中' : (data.triggerFailed ? '触发但改单失败' : (data.triggered ? '已触发' : '未启动'));
     panel.querySelector('[data-tvbe-current]').textContent = fmt(data.lastCurrentPrice);
     const order = data.lastOrderSnapshot || {};
     const snapshot = data.lastSnapshot || {};
@@ -1184,18 +1228,19 @@
     });
     const stateCard = panel.querySelector('[data-tvbe-state-card]');
     stateCard.classList.toggle('tvbe-running', Boolean(data.enabled));
-    stateCard.classList.toggle('tvbe-triggered', false);
+    stateCard.classList.toggle('tvbe-triggered', Boolean(data.triggered));
     panel.querySelector('[data-tvbe-state]').textContent = stateText;
     const setupButton = panel.querySelector('[data-tvbe-action="setup-lines"]');
     if (setupButton) {
-      setupButton.textContent = data.enabled ? '取消监控' : '启动监控';
+      setupButton.textContent = data.enabled ? '取消监控' : (data.triggerFailed ? '重新启动监控' : '启动监控');
       setupButton.classList.toggle('tvbe-active', Boolean(data.enabled));
       setupButton.classList.toggle('tvbe-danger', !data.enabled);
     }
+    const showPrices = data.enabled || data.testLinesVisible || data.triggered;
     for (const [id, value] of Object.entries({
       executionMode: data.executionMode || 'auto',
-      triggerPrice: data.enabled || data.testLinesVisible ? data.triggerPrice || '' : '',
-      breakevenPrice: data.enabled || data.testLinesVisible ? data.breakevenPrice || '' : ''
+      triggerPrice: showPrices ? data.triggerPrice || '' : '',
+      breakevenPrice: showPrices ? data.breakevenPrice || '' : ''
     })) {
       const el = panel.querySelector(`[data-tvbe-input="${id}"]`);
       if (el && document.activeElement !== el) el.value = value;
@@ -1275,6 +1320,7 @@
       breakevenPrice: breakevenInput.value,
       side: order.side || 'long',
       triggered: false,
+      triggerFailed: false,
       triggeredAt: null,
       lastExecutionResult: null
     });
@@ -1307,7 +1353,7 @@
       return clearSetupLines(panel);
     }
     if (options.seedFromOrder) await seedPricesFromOrder(panel);
-    await savePanelSettings(panel, { triggered: false, triggeredAt: null, lastExecutionResult: null });
+    await savePanelSettings(panel, { triggered: false, triggerFailed: false, triggeredAt: null, lastExecutionResult: null });
     const trigger = parsePrice(panel.querySelector('[data-tvbe-input="triggerPrice"]').value);
     const breakeven = parsePrice(panel.querySelector('[data-tvbe-input="breakevenPrice"]').value);
     if (!Number.isFinite(trigger) || trigger <= 0 || !Number.isFinite(breakeven) || breakeven <= 0) {
@@ -1319,7 +1365,7 @@
     const triggerResult = await drawNativePriceLine('trigger', panel);
     const breakevenResult = await drawNativePriceLine('breakeven', panel);
     startLineSyncLoop();
-    await safeStorageSet({ linesVisible: true, testLinesVisible: isTest, triggered: false, triggeredAt: null });
+    await safeStorageSet({ linesVisible: true, testLinesVisible: isTest, triggered: false, triggerFailed: false, triggeredAt: null });
     if (!options.deferUpdate) await updatePanel();
     return { ok: Boolean(triggerResult && triggerResult.ok && breakevenResult && breakevenResult.ok), triggerResult, breakevenResult };
   }
@@ -1357,6 +1403,7 @@
       lastCurrentPrice: snapshot.currentPrice || base,
       lastCurrentPriceSource: snapshot.currentPriceSource || 'test setup base',
       triggered: false,
+      triggerFailed: false,
       triggeredAt: null,
       lastExecutionResult: null
     });
@@ -1460,7 +1507,7 @@
   async function startFromPanel(panel) {
     const orderData = await refreshOrderSnapshot().catch(() => null);
     const autoSide = orderData && orderData.order && orderData.order.side ? orderData.order.side : undefined;
-    const settings = await savePanelSettings(panel, { enabled: true, triggered: false, startedAt: Date.now(), ...(autoSide ? { side: autoSide } : {}) });
+    const settings = await savePanelSettings(panel, { enabled: true, triggered: false, triggerFailed: false, startedAt: Date.now(), ...(autoSide ? { side: autoSide } : {}) });
     const trigger = parsePrice(settings.triggerPrice);
     const breakeven = parsePrice(settings.breakevenPrice);
     if (!Number.isFinite(trigger) || !Number.isFinite(breakeven) || trigger <= 0 || breakeven <= 0) {
@@ -1481,6 +1528,7 @@
     await clearSetupLines(document.getElementById(PANEL_ID), message, {
       enabled: false,
       triggered: false,
+      triggerFailed: false,
       triggeredAt: null,
       triggerPrice: '',
       breakevenPrice: ''
@@ -1498,6 +1546,7 @@
       executionMode: '',
       triggerPrice: '',
       breakevenPrice: '',
+      triggerFailed: false,
       lastCurrentPrice: null,
       lastCurrentPriceSource: '',
       lastSnapshot: null,
@@ -1516,6 +1565,7 @@
       settings: {
         enabled: data.enabled,
         triggered: data.triggered,
+        triggerFailed: data.triggerFailed,
         side: data.side,
         executionMode: data.executionMode,
         triggerPrice: data.triggerPrice,
@@ -1739,15 +1789,25 @@
     }
     if (!settings.enabled || settings.triggered) return;
 
-    const stored = await safeStorageGet({ lastOrderSnapshot: null });
-    const snapshot = await inferPositionSnapshot();
+    const stored = await safeStorageGet({ lastOrderSnapshot: null, lastSnapshot: null, lastSeenAt: null });
+    let snapshot = await inferPositionSnapshot();
+    // 桥接快照偶发超时（800ms）时，复用 30 秒内最近一次有效桥接状态，避免误判为未连接
+    if ((!snapshot.bridgeStatus || !snapshot.bridgeStatus.loggedIn) && stored.lastSnapshot && stored.lastSnapshot.bridgeStatus && stored.lastSnapshot.bridgeStatus.loggedIn && stored.lastSeenAt && Date.now() - stored.lastSeenAt < 30000) {
+      snapshot = {
+        ...snapshot,
+        bridgeStatus: stored.lastSnapshot.bridgeStatus,
+        textHints: { ...(snapshot.textHints || {}), hasTradovate: true, hasPaperTrading: false }
+      };
+      await addDebug('monitor:bridgeFallback', { reusedTs: stored.lastSeenAt, ageMs: Date.now() - stored.lastSeenAt });
+    }
     const currentPrice = snapshot.currentPrice;
+    const retainedOrder = snapshot.orderSnapshot || (stored.lastOrderSnapshot && stored.lastOrderSnapshot.stopOrderId ? stored.lastOrderSnapshot : null);
     await safeStorageSet({
       lastCurrentPrice: currentPrice,
       lastCurrentPriceSource: snapshot.currentPriceSource || '',
       lastSeenAt: Date.now(),
       lastSnapshot: snapshot,
-      lastOrderSnapshot: snapshot.orderSnapshot || stored.lastOrderSnapshot || null
+      lastOrderSnapshot: retainedOrder
     });
 
     const triggerPrice = parsePrice(settings.triggerPrice);
@@ -1756,17 +1816,11 @@
 
     if (!reachedTrigger(settings.side, currentPrice, triggerPrice)) return;
 
+    // 先标记已触发，防止重复触发；暂不清空价格和 enabled，等改单结果出来再决定
     await safeStorageSet({
-      triggered: false,
-      enabled: false,
-      triggeredAt: Date.now(),
-      linesVisible: false,
-      testLinesVisible: false,
-      triggerPrice: '',
-      breakevenPrice: ''
+      triggered: true,
+      triggeredAt: Date.now()
     });
-    clearSetupLines(document.getElementById(PANEL_ID), '触发后已删除推保线')
-      .catch(err => addDebug('trigger:clearLinesFailed', { error: err.message || String(err) }));
     await addDebug('trigger:reached', {
       side: settings.side,
       currentPrice,
@@ -1784,12 +1838,45 @@
     }, currentPrice);
     await safeStorageSet({ lastExecutionResult: result });
     await addDebug('execution:result', result);
+
     if (result.ok) {
+      // 改单成功：清空监控状态和推保线
+      await safeStorageSet({
+        enabled: false,
+        triggered: false,
+        triggerPrice: '',
+        breakevenPrice: '',
+        linesVisible: false,
+        testLinesVisible: false
+      });
+      clearSetupLines(document.getElementById(PANEL_ID), '触发后已删除推保线')
+        .catch(err => addDebug('trigger:clearLinesFailed', { error: err.message || String(err) }));
       await addLog('推保执行已发送，请确认止损位置', 'good');
     } else if (result.assisted) {
+      // 辅助模式：提醒后清空
+      await safeStorageSet({
+        enabled: false,
+        triggered: false,
+        triggerPrice: '',
+        breakevenPrice: '',
+        linesVisible: false,
+        testLinesVisible: false
+      });
+      clearSetupLines(document.getElementById(PANEL_ID), '辅助模式已提醒')
+        .catch(err => addDebug('trigger:clearLinesFailed', { error: err.message || String(err) }));
       await addLog('辅助模式已提醒，请手动确认止损已推到成本位', 'warn');
     } else {
-      await addLog(`自动推保未完成：${result.reason || '需要手动处理'}`, 'bad');
+      // 改单失败：保留价格和触发标记，停止监控但允许用户查看/重试
+      await safeStorageSet({
+        enabled: false,
+        triggered: true,
+        triggerFailed: true,
+        linesVisible: false,
+        testLinesVisible: false
+      });
+      clearSetupLines(document.getElementById(PANEL_ID), '改单失败，已停止监控')
+        .catch(err => addDebug('trigger:clearLinesFailed', { error: err.message || String(err) }));
+      await addLog(`自动推保未完成：${result.reason || '需要手动处理'}。价格已保留，可重新启动监控重试。`, 'bad');
     }
   }
 

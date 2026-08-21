@@ -8,9 +8,6 @@ const DEFAULTS = {
   lockDuration: 'end_of_day',
   tradeCountLockEnabled: false,
   dailyEntryLimit: 30,
-  scheduledLockEnabled: false,
-  scheduledLockTime: '10:30',
-  scheduledLockMessage: '10:30，流动性最好的时段结束',
   lastPnl: null,
   lastEquity: null,
   lastPnlSource: '',
@@ -49,10 +46,7 @@ const INTEGER_SETTING_IDS = ['dailyLossLimit', 'dailyProfitTarget', 'scanInterva
 const LOCKABLE_SETTING_IDS = [
   ...INTEGER_SETTING_IDS,
   'lockDuration',
-  'tradeCountLockEnabled',
-  'scheduledLockEnabled',
-  'scheduledLockTime',
-  'scheduledLockMessage'
+  'tradeCountLockEnabled'
 ];
 let isBlockedPage = false;
 let isBusyState = false;
@@ -64,8 +58,7 @@ let scheduledLoadTimer = null;
 let scheduledRuntimeRefreshTimer = null;
 let lastDiagnosticBundle = null;
 let lastDiagnosticMarkdown = '';
-let scheduledLockAutoEnableMigratedAt = null;
-const POPUP_BUILD_LABEL = 'Tradovate PL Auto Lock v2026_0721_103000';
+const POPUP_BUILD_LABEL = 'Tradovate PL Auto Lock v0819_1904';
 
 function applyPopupViewportHeight() {
   // Let Chrome size the extension popup naturally. If content exceeds Chrome's
@@ -915,10 +908,7 @@ async function load() {
     scanIntervalSeconds: DEFAULTS.scanIntervalSeconds,
     lockDuration: DEFAULTS.lockDuration,
     tradeCountLockEnabled: DEFAULTS.tradeCountLockEnabled,
-    dailyEntryLimit: DEFAULTS.dailyEntryLimit,
-    scheduledLockEnabled: DEFAULTS.scheduledLockEnabled,
-    scheduledLockTime: DEFAULTS.scheduledLockTime,
-    scheduledLockMessage: DEFAULTS.scheduledLockMessage
+    dailyEntryLimit: DEFAULTS.dailyEntryLimit
   });
   const scopedSettings = data[monitorKey] && typeof data[monitorKey] === 'object'
     ? data[monitorKey]
@@ -964,31 +954,7 @@ async function load() {
       ? Number(scopedSettings.dailyEntryLimit)
       : (data.dailyEntryLimit || DEFAULTS.dailyEntryLimit)
   );
-  const scheduledTime = (scopedSettings && scopedSettings.scheduledLockTime) || data.scheduledLockTime || DEFAULTS.scheduledLockTime;
-  const scheduledMessage = (scopedSettings && scopedSettings.scheduledLockMessage) || data.scheduledLockMessage || DEFAULTS.scheduledLockMessage;
-  const storedScheduledEnabled = scopedSettings && typeof scopedSettings.scheduledLockEnabled === 'boolean'
-    ? scopedSettings.scheduledLockEnabled
-    : data.scheduledLockEnabled;
-  scheduledLockAutoEnableMigratedAt = scopedSettings && scopedSettings.scheduledLockAutoEnableMigratedAt
-    ? scopedSettings.scheduledLockAutoEnableMigratedAt
-    : null;
-  const shouldAutoEnableScheduledLock = Boolean(
-    scopedSettings &&
-    storedScheduledEnabled === false &&
-    scheduledTime &&
-    scheduledTime !== DEFAULTS.scheduledLockTime &&
-    !scheduledLockAutoEnableMigratedAt
-  );
-  if (shouldAutoEnableScheduledLock) {
-    scheduledLockAutoEnableMigratedAt = new Date().toISOString();
-  }
-  hydrateSettingChecked('scheduledLockEnabled', storedScheduledEnabled || shouldAutoEnableScheduledLock);
-  hydrateSettingValue('scheduledLockTime', scheduledTime);
-  hydrateSettingValue('scheduledLockMessage', scheduledMessage);
   applySettingsLockState();
-  if (shouldAutoEnableScheduledLock && !isSettingsLocked() && !isBlockedPage) {
-    await saveSettings({ silent: true });
-  }
   if (isSettingsLocked()) {
     saveStatusEl.textContent = `设置已锁定至北京时间 ${formatBeijingDateTime(settingsLockedUntil)}`;
     saveStatusEl.className = 'save-status warn';
@@ -1062,16 +1028,8 @@ async function saveSettings({ silent = false } = {}) {
     scanIntervalSeconds: positiveIntegerFromInput('scanIntervalSeconds', DEFAULTS.scanIntervalSeconds),
     lockDuration: $('lockDuration').value || 'end_of_day',
     tradeCountLockEnabled: Boolean($('tradeCountLockEnabled').checked),
-    dailyEntryLimit: positiveIntegerFromInput('dailyEntryLimit', DEFAULTS.dailyEntryLimit),
-    scheduledLockEnabled: Boolean($('scheduledLockEnabled').checked),
-    scheduledLockTime: /^([01]\d|2[0-3]):[0-5]\d$/.test($('scheduledLockTime').value)
-      ? $('scheduledLockTime').value
-      : DEFAULTS.scheduledLockTime,
-    scheduledLockMessage: $('scheduledLockMessage').value.trim() || DEFAULTS.scheduledLockMessage,
-    scheduledLockAutoEnableMigratedAt: scheduledLockAutoEnableMigratedAt || new Date().toISOString()
+    dailyEntryLimit: positiveIntegerFromInput('dailyEntryLimit', DEFAULTS.dailyEntryLimit)
   };
-  $('scheduledLockTime').value = settings.scheduledLockTime;
-  $('scheduledLockMessage').value = settings.scheduledLockMessage;
   await chrome.storage.local.set({
     [monitorSettingsStorageKey()]: settings
   });
@@ -1118,24 +1076,6 @@ $('lockDuration').addEventListener('change', () => {
 });
 
 $('tradeCountLockEnabled').addEventListener('change', () => {
-  saveSettings();
-});
-
-$('scheduledLockEnabled').addEventListener('change', () => {
-  saveSettings();
-});
-
-$('scheduledLockTime').addEventListener('change', () => {
-  $('scheduledLockEnabled').checked = true;
-  saveSettings();
-});
-
-$('scheduledLockMessage').addEventListener('keydown', event => {
-  if (event.key === 'Enter') $('scheduledLockMessage').blur();
-});
-
-$('scheduledLockMessage').addEventListener('blur', () => {
-  if ($('scheduledLockMessage').value.trim()) $('scheduledLockEnabled').checked = true;
   saveSettings();
 });
 

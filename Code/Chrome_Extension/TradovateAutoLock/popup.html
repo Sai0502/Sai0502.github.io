@@ -8,7 +8,7 @@
 </head>
 <body>
   <header>
-    <h1 id="appTitle">Tradovate PL Auto Lock v2026_0630_022107</h1>
+    <h1 id="appTitle">Tradovate PL Auto Lock v0819_1904</h1>
   </header>
 
   <main id="panelContent">
@@ -28,36 +28,27 @@
       <div id="lockableSettings" class="lockable-settings">
         <div class="setting-pair-row">
           <label class="setting-row compact-setting-row">
-            <span>日亏损上限</span>
+            <span>日亏上限</span>
             <input id="dailyLossLimit" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
           </label>
           <label class="setting-row compact-setting-row">
-            <span>日盈利上限</span>
+            <span>日盈上限</span>
             <input id="dailyProfitTarget" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
           </label>
         </div>
-        <label class="setting-row">
-          <span>自动扫描间隔（秒）</span>
-          <input id="scanIntervalSeconds" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
-        </label>
-        <div class="setting-row setting-row-wide trade-count-row">
-          <label class="setting-check-inline">
-            <span>日交易次数上限</span>
-            <input id="tradeCountLockEnabled" type="checkbox">
+        <div class="setting-pair-row second-pair-row">
+          <div class="setting-row setting-row-wide trade-count-row">
+            <label class="setting-check-inline">
+              <span>日开仓次数上限</span>
+              <input id="tradeCountLockEnabled" type="checkbox">
+            </label>
+            <input id="dailyEntryLimit" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="日开仓次数上限" placeholder="日开仓次数上限">
+          </div>
+          <label class="setting-row compact-setting-row">
+            <span>自动扫描（秒）</span>
+            <input id="scanIntervalSeconds" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
           </label>
-          <input id="dailyEntryLimit" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="今日开仓上限" placeholder="今日开仓上限">
         </div>
-        <div class="setting-row setting-row-wide schedule-time-row">
-          <label class="setting-check-inline">
-            <span>定时锁定账户</span>
-            <input id="scheduledLockEnabled" type="checkbox">
-          </label>
-          <input id="scheduledLockTime" type="time" autocomplete="off">
-        </div>
-        <label class="setting-row setting-row-wide schedule-message-row">
-          <span>定时锁定文案</span>
-          <input id="scheduledLockMessage" type="text" autocomplete="off">
-        </label>
         <label class="setting-row setting-row-wide">
           <span>锁定周期</span>
           <select id="lockDuration">

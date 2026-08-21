@@ -1,6 +1,6 @@
 (function () {
 const SCRIPT_VERSION = '2026-07-21-live-state-step4-button-v31';
-const SCRIPT_BUILD_LABEL = 'Tradovate PL Auto Lock v2026_0721_103000';
+const SCRIPT_BUILD_LABEL = 'Tradovate PL Auto Lock v0819_1904';
 if (window.__tradovateAutoLockLoaded === SCRIPT_VERSION) return;
 window.__tradovateAutoLockLoaded = SCRIPT_VERSION;
 
@@ -11,7 +11,6 @@ const LOCKOUT_OVERLAY_ID = 'tradovate-auto-lockout-overlay';
 const LOCKOUT_TIMER_ID = 'tradovate-auto-lockout-timer';
 const LOCKOUT_CLOSE_ID = 'tradovate-auto-lockout-close';
 const LOCK_SETTING_PROMPT_ID = 'tradovate-lock-setting-prompt';
-const SCHEDULED_LOCK_PROMPT_ID = 'tradovate-scheduled-lock-prompt';
 
 let currentStep = 0;
 let lastClickedRect = null;
@@ -30,7 +29,6 @@ let lockSettingPromptRetryCount = 0;
 let lockSettingPromptObserverStarted = false;
 let monitorLoopTimerId = null;
 let monitorLoopRunning = false;
-let scheduledLockPromptTimer = null;
 let pagePromptSuppressedUntil = 0;
 const runtimeDiagnosticEvents = [];
 
@@ -322,7 +320,6 @@ function suppressPagePrompts(reason, durationMs = 60 * 1000) {
   pagePromptSuppressedUntil = Date.now() + durationMs;
   lockSettingPromptDismissed = true;
   removeLockSettingPrompt();
-  removeScheduledLockPrompt();
   debugLog('page_prompts.suppressed', {
     reason,
     until: pagePromptSuppressedUntil
@@ -493,216 +490,6 @@ function renderLockSettingPrompt() {
       }
     });
   }
-}
-
-function removeScheduledLockPrompt() {
-  document.getElementById(SCHEDULED_LOCK_PROMPT_ID)?.remove();
-}
-
-function scheduledLockPromptStorageKey(accountId, dateKey, timeText) {
-  return `tradovateScheduledLockPrompt:${accountId || 'default'}:${dateKey}:${timeText || '10:30'}`;
-}
-
-function currentBeijingDateKey(timestamp = Date.now()) {
-  const { year, month, day } = currentBeijingParts(timestamp);
-  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-}
-
-function parseClockTime(value) {
-  const match = String(value || '').match(/^([01]\d|2[0-3]):([0-5]\d)$/);
-  if (!match) return null;
-  return {
-    hour: Number(match[1]),
-    minute: Number(match[2])
-  };
-}
-
-function scheduledLockPromptTimeMs(timeText, now = Date.now()) {
-  const clock = parseClockTime(timeText);
-  if (!clock) return null;
-  const { year, month, day } = currentBeijingParts(now);
-  return zonedWallTimeToUtcMs({
-    year,
-    month,
-    day,
-    hour: clock.hour,
-    minute: clock.minute,
-    second: 0
-  }, 'Asia/Shanghai');
-}
-
-async function markScheduledLockPrompt(accountId, dateKey, timeText, status) {
-  await storageSet({
-    [scheduledLockPromptStorageKey(accountId, dateKey, timeText)]: {
-      status,
-      at: Date.now(),
-      time: new Date().toISOString()
-    }
-  });
-}
-
-function escapeHtml(value) {
-  return String(value || '').replace(/[&<>"']/g, ch => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  }[ch]));
-}
-
-function renderScheduledLockPrompt(cfg, accountId, dateKey) {
-  if (document.getElementById(SCHEDULED_LOCK_PROMPT_ID)) return;
-  const message = cfg.scheduledLockMessage || '10:30，流动性最好的时段结束';
-  removeLockSettingPrompt();
-  debugLog('scheduled_lock_prompt.render', {
-    accountId,
-    dateKey,
-    scheduledLockTime: cfg.scheduledLockTime,
-    message
-  });
-
-  const overlay = document.createElement('div');
-  overlay.id = SCHEDULED_LOCK_PROMPT_ID;
-  overlay.innerHTML = `
-    <div class="tradovate-scheduled-lock-card" role="dialog" aria-live="assertive">
-      <div class="tradovate-scheduled-lock-title">${escapeHtml(message)}</div>
-      <div class="tradovate-scheduled-lock-line"></div>
-      <div class="tradovate-scheduled-lock-actions">
-        <button class="tradovate-scheduled-lock-button tradovate-scheduled-lock-button--primary" data-scheduled-lock-action="open" type="button">去锁定账号</button>
-        <button class="tradovate-scheduled-lock-button tradovate-scheduled-lock-button--secondary" data-scheduled-lock-action="dismiss" type="button">不锁定</button>
-      </div>
-    </div>
-  `;
-  overlay.style.cssText = `
-    position: fixed;
-    inset: 0;
-    z-index: 2147483646;
-    display: grid;
-    place-items: center;
-    padding: 5vh 4vw;
-    background: rgba(0, 0, 0, 0.62);
-    color: #eef3f8;
-    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  `;
-  const style = document.createElement('style');
-  style.textContent = `
-    #${SCHEDULED_LOCK_PROMPT_ID} .tradovate-scheduled-lock-card {
-      box-sizing: border-box;
-      width: min(92vw, 760px);
-      border: 1px solid rgba(125, 151, 184, 0.55);
-      border-radius: 18px;
-      background: #101821;
-      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
-      padding: 48px 42px;
-      display: grid;
-      gap: 24px;
-      text-align: center;
-    }
-    #${SCHEDULED_LOCK_PROMPT_ID} .tradovate-scheduled-lock-title {
-      color: #ffb14a;
-      font-size: clamp(30px, 3.5vw, 48px);
-      line-height: 1.18;
-      font-weight: 900;
-    }
-    #${SCHEDULED_LOCK_PROMPT_ID} .tradovate-scheduled-lock-line {
-      height: 1px;
-      background: rgba(126, 151, 183, 0.65);
-    }
-    #${SCHEDULED_LOCK_PROMPT_ID} .tradovate-scheduled-lock-actions {
-      display: flex;
-      justify-content: center;
-      gap: 18px;
-    }
-    #${SCHEDULED_LOCK_PROMPT_ID} .tradovate-scheduled-lock-button {
-      min-width: 180px;
-      height: 58px;
-      border-radius: 12px;
-      border: 1px solid rgba(150, 167, 188, 0.45);
-      font-size: 24px;
-      font-weight: 800;
-      cursor: pointer;
-    }
-    #${SCHEDULED_LOCK_PROMPT_ID} .tradovate-scheduled-lock-button--primary {
-      background: linear-gradient(180deg, #ffb347 0%, #ff8f1f 100%);
-      color: #1b1308;
-    }
-    #${SCHEDULED_LOCK_PROMPT_ID} .tradovate-scheduled-lock-button--secondary {
-      background: rgba(255, 255, 255, 0.06);
-      color: #d6dde8;
-    }
-  `;
-  overlay.appendChild(style);
-  document.documentElement.appendChild(overlay);
-
-  overlay.addEventListener('click', async event => {
-    const button = event.target && event.target.closest ? event.target.closest('[data-scheduled-lock-action]') : null;
-    if (!button) return;
-    const action = button.getAttribute('data-scheduled-lock-action');
-    if (action === 'dismiss') {
-      await markScheduledLockPrompt(accountId, dateKey, cfg.scheduledLockTime, 'dismissed');
-      debugLog('scheduled_lock_prompt.dismiss_clicked', { accountId, dateKey });
-      removeScheduledLockPrompt();
-      return;
-    }
-    if (action === 'open') {
-      button.disabled = true;
-      try {
-        lockSettingPromptDismissed = true;
-        removeLockSettingPrompt();
-        await markScheduledLockPrompt(accountId, dateKey, cfg.scheduledLockTime, 'opened_popup');
-        removeScheduledLockPrompt();
-        await requestOpenExtensionPopup('scheduled_lock_prompt');
-      } catch (err) {
-        button.disabled = false;
-        debugLog('scheduled_lock_prompt.open_popup_failed', {
-          error: err && err.message ? err.message : String(err)
-        });
-        console.warn('[TradovateAutoLock] open popup from scheduled prompt failed:', err);
-      }
-    }
-  });
-}
-
-async function maybeShowScheduledLockPrompt(reason = 'timer') {
-  if (Date.now() < pagePromptSuppressedUntil) return;
-  if (document.getElementById(LOCKOUT_OVERLAY_ID) || document.getElementById(SCHEDULED_LOCK_PROMPT_ID)) return;
-  if (hasActiveLockoutForPrompt()) return;
-
-  const accountId = extractTradovateAccountId();
-  if (!accountId || accountId === 'default') {
-    debugLog('scheduled_lock_prompt.skip', { reason, cause: 'account_unresolved' });
-    return;
-  }
-  const cfg = await readMonitorSettings(accountId);
-  if (!cfg.scheduledLockEnabled) return;
-
-  const scheduledAt = scheduledLockPromptTimeMs(cfg.scheduledLockTime);
-  if (!Number.isFinite(scheduledAt)) {
-    debugLog('scheduled_lock_prompt.skip', { reason, cause: 'invalid_time', scheduledLockTime: cfg.scheduledLockTime });
-    return;
-  }
-  const now = Date.now();
-  const promptWindowMs = 15 * 60 * 1000;
-  if (now < scheduledAt || now > scheduledAt + promptWindowMs) return;
-
-  const dateKey = currentBeijingDateKey(now);
-  const key = scheduledLockPromptStorageKey(accountId, dateKey, cfg.scheduledLockTime);
-  const data = await storageGet({ [key]: null });
-  if (data[key] && data[key].status) {
-    debugLog('scheduled_lock_prompt.skip', { reason, cause: 'already_handled', accountId, dateKey, status: data[key].status });
-    return;
-  }
-  renderScheduledLockPrompt(cfg, accountId, dateKey);
-}
-
-function scheduleScheduledLockPromptChecks() {
-  if (scheduledLockPromptTimer) window.clearInterval(scheduledLockPromptTimer);
-  scheduledLockPromptTimer = window.setInterval(() => {
-    maybeShowScheduledLockPrompt('timer').catch(err => {
-      if (!isExtensionContextInvalidated(err)) console.warn('[TradovateAutoLock] scheduled lock prompt failed:', err);
-    });
-  }, 30 * 1000);
 }
 
 function parseRemainingDurationMs(text) {
@@ -1215,11 +1002,6 @@ async function maybeShowLockSettingPrompt(reason = 'direct') {
   if (document.getElementById(LOCKOUT_OVERLAY_ID)) {
     hideLockSettingPromptFor('lockout_overlay_visible');
     debugLog('lock_setting_prompt.skip', { reason: 'lockout_overlay_visible' });
-    return;
-  }
-  if (document.getElementById(SCHEDULED_LOCK_PROMPT_ID)) {
-    hideLockSettingPromptFor('scheduled_lock_prompt_visible');
-    debugLog('lock_setting_prompt.skip', { reason: 'scheduled_lock_prompt_visible' });
     return;
   }
   const autoState = await getAutoLockState();
@@ -3494,10 +3276,7 @@ async function readMonitorSettings(accountId = extractTradovateAccountId()) {
     scanIntervalSeconds: DEFAULT_SCAN_INTERVAL_SECONDS,
     lockDuration: 'end_of_day',
     tradeCountLockEnabled: false,
-    dailyEntryLimit: 30,
-    scheduledLockEnabled: false,
-    scheduledLockTime: '10:30',
-    scheduledLockMessage: '10:30，流动性最好的时段结束'
+    dailyEntryLimit: 30
   });
   const scoped = cfg[scopedKey] && typeof cfg[scopedKey] === 'object'
     ? cfg[scopedKey]
@@ -3527,15 +3306,6 @@ async function readMonitorSettings(accountId = extractTradovateAccountId()) {
     dailyEntryLimit: Number(scoped && scoped.dailyEntryLimit) > 0
       ? Number(scoped.dailyEntryLimit)
       : Number(cfg.dailyEntryLimit || 30),
-    scheduledLockEnabled: scoped && typeof scoped.scheduledLockEnabled === 'boolean'
-      ? scoped.scheduledLockEnabled
-      : Boolean(cfg.scheduledLockEnabled),
-    scheduledLockTime: scoped && scoped.scheduledLockTime
-      ? scoped.scheduledLockTime
-      : (cfg.scheduledLockTime || '10:30'),
-    scheduledLockMessage: scoped && scoped.scheduledLockMessage
-      ? scoped.scheduledLockMessage
-      : (cfg.scheduledLockMessage || '10:30，流动性最好的时段结束'),
     autoMonitorEnabled: true,
     autoLockEnabled: true
   };
@@ -3875,15 +3645,5 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 restoreLockoutOverlay().catch(err => {
   if (!isExtensionContextInvalidated(err)) console.warn('[TradovateAutoLock] failed to restore lockout overlay:', err);
 });
-window.setTimeout(() => {
-  maybeShowLockSettingPrompt('initial').catch(err => {
-    if (!isExtensionContextInvalidated(err)) console.warn('[TradovateAutoLock] failed to show lock-setting prompt:', err);
-  });
-  scheduleLockSettingPromptChecks();
-  maybeShowScheduledLockPrompt('initial').catch(err => {
-    if (!isExtensionContextInvalidated(err)) console.warn('[TradovateAutoLock] failed to show scheduled lock prompt:', err);
-  });
-  scheduleScheduledLockPromptChecks();
-}, 1200);
 monitorLoop();
 })();

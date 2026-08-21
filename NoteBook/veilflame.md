@@ -1,3 +1,89 @@
+
+
+### 8.20 搬瓦工
+
+1. [搬瓦工中文网](https://www.bandwagonhost.net/) - [购买教程](https://www.bandwagonhost.net/716.html) - [挑选合适的搬瓦工套餐：CN2 GIA-E (推荐)](https://bwh81.net/cart.php?a=confproduct&i=0)
+
+2. 默认：
+
+   * `Billing Cycle：$49.99 USD Quarterly`
+   * `Location:US - Los Angeles DC6` 
+   * `Add to Cart添加到购物车`
+
+3. Checkoyt结算
+
+   * Your Details随便填
+   * Payment Method：Alipay
+   * 邮箱验证码确认
+
+   * Make payment：扫支付宝的二维码支付
+
+4. [进入客户中心](https://bwh81.net/clientarea.php?incorrect=true) - Services - My Services - 找到机器 - 进入 Manage 的 Open KiwiVM
+
+   | Service                                                      | IP Address    | Created    | Next Renewal                 | Manage      |
+   | :----------------------------------------------------------- | :------------ | :--------- | :--------------------------- | :---------- |
+   | **core-pipes-1.localdomain** SPECIAL 20G KVM PROMO V5 - CN2 GIA ECOMMERCE | 199.19.110.23 | 2026-08-20 | 2026-11-20 Quarterly: $49.99 | Open KiwiVM |
+
+   * Main controls：Actions：Stop - Go back
+   * Install new OS：ubuntu-22.04-x86_64，获得密码：xxxxxxxx
+   * Main controls：等待加载的100%；确认Status：Running；得到服务器IP：199.19.110.23
+
+5. Windows PowerShell：./RealiTLScanner-windows-64.exe -addr 199.19.110.23 -port 443 -thread 100 -timeout 5 -out file.csv（运行三五分钟，让它多生成一些），Ctrl C结束生成
+
+6. 安装 `finalshell_windows_x64.exe`
+
+   1. 连接管理器 - SSH连接
+      1. 名称：Sai_VPS
+      2. 主机：199.19.110.23
+      3. 用户名：root
+      4. 密码：ubuntu的密码
+      5. 确定
+   2. 双击**连接列表**里的Sai_VPS - 接受并保存，即可连上搬瓦工
+      1. apt update && apt install -y unzip
+      2. wget https://github.com/V2RaySSR/RealityChecker/releases/latest/download/reality-checker-linux-amd64.zip
+      3. unzip reality-checker-linux-amd64.zip && chmod +x reality-checker
+      4. 将 file.csv 拖入 finalshell 的 /root 下的文件列表
+      5. ./reality-checker csv file.csv 会生成1个列表，找 CDN 是「无」的，握手时间（延迟）低一点的，证书时间长一点的，页面状态200，最好全是绿色的，找这样的域名（如yingdiedingzhi.top）
+      6. 确认这个域名能正常访问
+      7. bash <(curl -Ls https://raw.githubusercontent.com/alireza0/s-ui/master/install.sh)
+         1. Do you want to continue with the modification?[y / n]，输入n
+         2. 得到一个账号密码和全局地址
+            1. First the mean credentials
+               1. Username：Fn/sSYAc
+               2. Password：AZAkVA3o
+            2. 全局地址：Global address：http://xxx.xx.xx.xx:2095/app/（即后台地址）
+
+7. 浏览器打开：http://xxx.xx.xx.xx:2095/app/，输入 Username 和 Password，语言简体中文
+
+   1. TLS设置：添加
+      1. 名称：Atas
+      2. Reality
+      3. SNI：yingdiedingzhi.top
+      4. 握手服务器：yingdiedingzhi.top
+      5. 生成：得到私钥、公钥、Short IDs
+      6. 保存
+   2. 入站管理：添加
+      1. 类型：VLESS（自动生成标签vless-28641）
+      2. 保存
+   3. 用户管理：添加
+      1. 入站标签：vless-28641
+      2. 保存，即可得到一个订阅地址
+      3. 操作：点击二维码标识 - 链接 vless://xxxx-xxx-xxx
+
+8. 打开[订阅转换工具](https://kjfx.github.io/socks/clash.html)
+
+   1. 粘贴 vless://xxxx-xxx-xxx
+   2. 转换成 Mihomo，下载，得到 default.yaml
+
+9. 安装 clash.exe
+
+   1. 订阅：拖入 default.yaml，右键：使用
+   2. 首页：节点选择：vless-28641
+   3. 网络设置：从`系统代理`改成`虚拟网卡模式`：打开
+   4. 所有设置就完成了
+
+
+
 ### 7.17 美盘消息面可用性分析
 
 1. 周二和周三两个CPI的不同之处

@@ -56,9 +56,9 @@ VPN开启后Chrome可翻墙，终端不行
 >    ```bash
 >    # 创建 .zshrc 文件
 >    echo >> ~/.zshrc
->                                                                                     
+>                                                                                        
 >    open ~/.zshrc
->                                                                                     
+>                                                                                        
 >    # 在文件最后添加下面两句
 >    export http_proxy="http://127.0.0.1:8234" export https_proxy="http://127.0.0.1:8234"
 >    ```
@@ -224,14 +224,14 @@ VPN开启后Chrome可翻墙，终端不行
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->             
+>                 
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->             
+>                 
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 >
@@ -706,6 +706,8 @@ VPN开启后Chrome可翻墙，终端不行
 
 ##### 罗技鼠标Logitech G HUB
 
+> ![image-20260816112641694](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202608161128970.png)
+>
 > ![image-20260724232614638](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202607242326698.png)
 >
 > 1. 关闭板载内存

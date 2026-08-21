@@ -171,7 +171,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/alireza0/s-ui/master/install.s
   - 点「生成」→ 得到**私钥、公钥、Short IDs**
   - 保存
 
-### 7.2 配置IOS - ShadowRocket 和 MAC - Clash Verge
+### 7.2 配置IOS - ShadowRocket 和 MAC - Clash Verge（常用）
 
 ![image-20260822013541527](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202608220135614.png)
 
@@ -191,34 +191,54 @@ bash <(curl -Ls https://raw.githubusercontent.com/alireza0/s-ui/master/install.s
   - 入站标签：选 `vless-20727`
   - 保存
   - 点二维码图标 → 切到链接Tab → 单击即可复制链接 `vless://xxxx-xxx-xxx` 
+  
 - 配置 IOS - ShadowRocket
   - 用户管理 → 点二维码图标 → 切到链接Tab → ShadowRocket扫描，即可获取订阅地址
   
 - 配置 MAC - Clash Verge
   - [下载 官方 Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev/releases)
+  
   - 订阅转换 → 打开 [订阅转换工具](https://kjfx.github.io/socks/clash.html)
     - 粘贴 `vless://xxxx-xxx-xxx`
     - 转换成 Mihomo 格式
     - 下载得到 `default.yaml`
+    
   - 导入订阅
     1. 关闭当前梯子 Surge
     2. 打开 Clash Verge Rev
     3. 左侧 → `订阅`（Profiles）
     4. 把 `default.yaml` 文件拖入窗口，或点「新建」→ 粘贴订阅 URL
     5. 右键该订阅 → `使用`（激活）
+    
   - 选择节点
     1. 左侧 → `代理`（Proxies）
     2. 节点选择：选 `vless-28641`
-  - 开启系统代理
-    1. 左侧 → `设置`（Settings）
-    2. 系统代理：`开启`（对应教程里的「系统代理」模式）
-       1. Mac 用「系统代理」模式就够了，不需要「虚拟网卡模式」
-       2. 系统代理模式：通过 HTTP/SOCKS 代理转发，覆盖大部分应用
-       3. 若某些应用不走代理，可额外开 TUN 模式（虚拟网卡）：设置 → TUN 模式 → 开启（要 Mac 密码）
+    
+  - 开启代理
+    
+    |            | 系统代理模式           | TUN 虚拟网卡模式                 |
+    | ---------- | ---------------------- | -------------------------------- |
+    | 兼容性     | 几乎所有系统都稳定     | 可能和其他 VPN / 安全软件冲突    |
+    | 覆盖范围   | 覆盖浏览器、大部分 App | 覆盖所有应用，没有例外           |
+    | 出问题概率 | 低                     | 稍高（驱动层面的东西）           |
+    | 适合场景   | 普通浏览网页           | 桌面软件不遵守代理、需要全局控制 |
+    
+    ![image-20260822031633933](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202608220316987.png)
+    
+    1. 系统代理模式：通过 HTTP/SOCKS 代理转发，覆盖大部分应用，一般用「系统代理」模式就够了，但为了确保 Altas 一定会走 VPS，所以我们使用TUN 模式
+    2. 若某些应用不走代理，可额外开 TUN 模式。
+    
   - 验证：浏览器打开 google.com，能访问就成功了
 
+### 7.3 配置 MAC - Surge（备用）
 
-### 7.3 配置 MAC - Surge
+> |              | Surge                                      | Clash Verge Rev                |
+> | ------------ | ------------------------------------------ | ------------------------------ |
+> | 可用协议     | VMess 无 TLS / Shadowsocks（不支持 VLESS） | VLESS+Reality                  |
+> | 抗封锁能力   | ⚠️ 弱，无 TLS 混淆，GFW 能识别协议特征      | ✅ 强，Reality 伪装成正常 HTTPS |
+> | 长连接稳定性 | ⚠️ 已验证有问题（GitHub push 断连）         | ✅ TLS 加密，GFW 不会主动干扰   |
+> | 网页加载速度 | ✅ 快                                       | ⚠️ 慢（Reality 握手 650ms）     |
+> | 对交易的影响 | ❌ 长连接可能被重置，致命                   | ✅ 长连接稳定，网页慢不影响交易 |
 
 ![image-20260822013601453](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202608220136526.png)
 

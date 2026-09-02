@@ -1,6 +1,6 @@
 (function () {
 const SCRIPT_VERSION = '2026-07-21-live-state-step4-button-v31';
-const SCRIPT_BUILD_LABEL = 'Tradovate PL Auto Lock v0819_1904';
+const SCRIPT_BUILD_LABEL = 'Tradovate PL Auto Lock v0824_2341';
 if (window.__tradovateAutoLockLoaded === SCRIPT_VERSION) return;
 window.__tradovateAutoLockLoaded = SCRIPT_VERSION;
 
@@ -41,6 +41,8 @@ const LOCKOUT_OVERLAY_STATE_KEY = 'tradovateLockoutOverlayState';
 const DEBUG_LOG_KEY = 'debugLog';
 const LOCK_PROMPT_RETRY_INTERVAL_MS = 1500;
 const LOCK_PROMPT_MAX_RETRIES = 40;
+const AUTO_LOCK_MAX_CONSECUTIVE_FAILURES = 3;
+const AUTO_LOCK_COOLDOWN_MS = 30 * 60 * 1000;
 
 function pushRuntimeDiagnostic(type, details = {}) {
   try {
@@ -2679,19 +2681,56 @@ async function executeLegacyLockoutAfterManualOpen(cfg) {
   };
 }
 
+async function handleAccountAlreadyLocked(cfg, modalRoot, targetRow, preferredAccountId) {
+  debugLog('real_lockout.account_already_locked', {
+    accountId: preferredAccountId,
+    rowText: truncateText(targetRow.rowText, 240)
+  });
+
+  const closeButton = findActionByText(modalRoot, /撤销|取消|关闭|Cancel|Close/i, {
+    preferActionButton: true,
+    preferLower: true,
+    preferRight: true
+  });
+  if (closeButton) {
+    clickExact(closeButton);
+    await sleep(300);
+  }
+
+  const actualLockDuration = lockDurationFromText(targetRow.rowText, cfg.lockDuration);
+  const { overlayState, accountId } = await persistManualLockState(actualLockDuration, preferredAccountId);
+
+  return {
+    ok: true,
+    done: true,
+    message: '账户已处于锁定状态，已同步状态',
+    accountId,
+    lockDuration: actualLockDuration,
+    lockExpiresAt: overlayState.expiresAt,
+    alreadyLocked: true
+  };
+}
+
 async function executeNewAccountLockoutAfterManualOpen(cfg, modalRoot, preferredAccountId) {
+  const rows = accountLockRows(modalRoot);
+  const targetRow = rows.find(row => row.accountId === preferredAccountId);
+
+  if (targetRow && targetRow.locked) {
+    return handleAccountAlreadyLocked(cfg, modalRoot, targetRow, preferredAccountId);
+  }
+
   const selected = findLockDurationSelectForAccount(modalRoot, preferredAccountId);
   if (!selected) {
-    const rows = accountLockRows(modalRoot).map(row => ({
+    const rowsInfo = rows.map(row => ({
       accountId: row.accountId,
       locked: row.locked,
       rowText: truncateText(row.rowText, 240)
     }));
-    throw new Error(`新版手动锁定弹窗中找不到账号对应的锁定时间下拉框。当前账号：${preferredAccountId || '未识别'}；账号行：${JSON.stringify(rows)}`);
+    throw new Error(`新版手动锁定弹窗中找不到账号对应的锁定时间下拉框。当前账号：${preferredAccountId || '未识别'}；账号行：${JSON.stringify(rowsInfo)}`);
   }
 
   if (selected.locked) {
-    throw new Error(`账号 ${selected.accountId} 已显示为锁定状态，未重复锁定`);
+    return handleAccountAlreadyLocked(cfg, modalRoot, selected, preferredAccountId);
   }
 
   debugLog('real_lockout.account_row_verified', {
@@ -3409,7 +3448,8 @@ async function monitorScan({ manual = false } = {}) {
     };
   }
   if (!kind) {
-    if (state.status === 'locked' || state.status === 'locking' || state.lockKey) {
+    const shouldResetFailureState = Number(state.consecutiveFailures) > 0 || Number(state.cooldownUntil) > 0;
+    if (state.status === 'locked' || state.status === 'locking' || state.lockKey || shouldResetFailureState) {
       await setAutoLockState({
         status: 'within_threshold',
         lockKey: '',
@@ -3420,6 +3460,8 @@ async function monitorScan({ manual = false } = {}) {
         tradeCountPositionSource,
         tradeCountBlockedByOpenPosition,
         tradeEntryCount: Number.isFinite(tradeEntryCount) ? tradeEntryCount : null,
+        consecutiveFailures: 0,
+        cooldownUntil: 0,
         clearedAt: now,
         error: ''
       }, result.accountId);
@@ -3472,6 +3514,19 @@ async function monitorScan({ manual = false } = {}) {
     return { ok: true, locked: false, skipped: 'lock already in progress', kind, tradeStats, ...result };
   }
 
+  const consecutiveFailures = Number(state.consecutiveFailures) || 0;
+  const cooldownUntil = Number(state.cooldownUntil) || 0;
+  if (cooldownUntil > now) {
+    debugLog('auto_lock.cooldown_active', {
+      accountId: result.accountId || accountId,
+      kind,
+      consecutiveFailures,
+      cooldownUntil,
+      cooldownRemainingMs: cooldownUntil - now
+    });
+    return { ok: true, locked: false, skipped: 'lock cooldown active', kind, tradeStats, ...result };
+  }
+
   await setAutoLockState({
     status: 'locking',
     lockKey,
@@ -3500,14 +3555,22 @@ async function monitorScan({ manual = false } = {}) {
       tradeCountPositionSource,
       tradeCountBlockedByOpenPosition,
       tradeEntryCount: Number.isFinite(tradeEntryCount) ? tradeEntryCount : null,
+      consecutiveFailures: 0,
+      cooldownUntil: 0,
       error: ''
     }, result.accountId);
     return { ok: true, locked: true, kind, lockResult, tradeStats, ...result };
   } catch (err) {
+    const newFailures = consecutiveFailures + 1;
+    const newCooldownUntil = newFailures >= AUTO_LOCK_MAX_CONSECUTIVE_FAILURES
+      ? now + AUTO_LOCK_COOLDOWN_MS
+      : 0;
     debugLog('auto_lock.real_lockout_failed', {
       accountId: result.accountId || accountId,
       kind,
       error: err.message || String(err),
+      consecutiveFailures: newFailures,
+      cooldownUntil: newCooldownUntil,
       pageIndicatesLocked: pageIndicatesLocked(),
       lockButtonState: currentManualLockButtonState()
     });
@@ -3521,8 +3584,10 @@ async function monitorScan({ manual = false } = {}) {
       tradeCountPositionSource,
       tradeCountBlockedByOpenPosition,
       tradeEntryCount: Number.isFinite(tradeEntryCount) ? tradeEntryCount : null,
-      error: err.message || String(err),
-      failedAt: Date.now()
+      consecutiveFailures: newFailures,
+      cooldownUntil: newCooldownUntil,
+      lastFailedAt: now,
+      error: err.message || String(err)
     }, result.accountId);
     if (manual) throw err;
     return { ok: false, locked: false, kind, error: err.message || String(err), tradeStats, ...result };

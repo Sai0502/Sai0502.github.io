@@ -1865,10 +1865,26 @@
    > 3. 美盘 VP：顶部指标集 Volume Profile & TPO
    >
    >    ![image-20260727110753191](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202607271107261.png)
-   >
-   > 4. 处理一下名称
-   >
-   >    ![longshot20260727111627](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202607271116961.png)
+
+### Atas Ultra设置
+
+1. 数据链接
+
+   ![image-20260902122403386](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202609021224070.png)
+   
+1. 市场回放
+
+   ![image-20260902153258603](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202609021532684.png)
+   
+1. 常用快捷键
+
+   ![image-20260902165735543](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202609021657628.png)
+   
+   1. m：放大镜查看 K 线内部订单轨迹
+   2. Control：放大镜查看挂单数量
+   3. Control + 1：自定义的回放模式「开始/暂停」
+   4. 
+   
 
 #  北极星账号打造
 

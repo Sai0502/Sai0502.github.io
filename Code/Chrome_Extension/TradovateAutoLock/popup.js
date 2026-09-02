@@ -58,7 +58,7 @@ let scheduledLoadTimer = null;
 let scheduledRuntimeRefreshTimer = null;
 let lastDiagnosticBundle = null;
 let lastDiagnosticMarkdown = '';
-const POPUP_BUILD_LABEL = 'Tradovate PL Auto Lock v0819_1904';
+const POPUP_BUILD_LABEL = 'Tradovate PL Auto Lock v0824_2341';
 
 function applyPopupViewportHeight() {
   // Let Chrome size the extension popup naturally. If content exceeds Chrome's

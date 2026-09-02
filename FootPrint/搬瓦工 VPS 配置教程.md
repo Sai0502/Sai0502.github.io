@@ -196,7 +196,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/alireza0/s-ui/master/install.s
   - 用户管理 → 点二维码图标 → 切到链接Tab → ShadowRocket扫描，即可获取订阅地址
   
 - 配置 MAC - Clash Verge
-  - [下载 官方 Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev/releases)
+  - [下载 官方 Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev/releases)：Apple M芯片
   
   - 订阅转换 → 打开 [订阅转换工具](https://kjfx.github.io/socks/clash.html)
     - 粘贴 `vless://xxxx-xxx-xxx`
@@ -229,6 +229,28 @@ bash <(curl -Ls https://raw.githubusercontent.com/alireza0/s-ui/master/install.s
     2. 若某些应用不走代理，可额外开 TUN 模式。
     
   - 验证：浏览器打开 google.com，能访问就成功了
+  
+- 配置 Windows - Clash Verge
+  
+  - [下载 官方 Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev/releases)：ARM64版本
+  - 订阅转换 → 打开 [订阅转换工具](https://kjfx.github.io/socks/clash.html)
+    - 粘贴 `vless://xxxx-xxx-xxx`
+    - 转换成 Mihomo 格式
+    - 下载得到 `default.yaml`
+  
+  - 导入订阅
+    1. 关闭当前梯子 Surge
+    2. 打开 Clash Verge Rev
+    3. 左侧 → `订阅`（Profiles）
+    4. 把 `default.yaml` 文件拖入窗口，或点「新建」→ 粘贴订阅 URL
+    5. 右键该订阅 → `使用`（激活）
+  
+  - 选择节点
+    1. 左侧 → `代理`（Proxies）
+    2. 节点选择：选 `vless-28641`
+  
+  - 开启代理
+  
 
 ### 7.3 配置 MAC - Surge（备用）
 

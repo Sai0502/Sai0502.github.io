@@ -56,9 +56,9 @@ VPN开启后Chrome可翻墙，终端不行
 >    ```bash
 >    # 创建 .zshrc 文件
 >    echo >> ~/.zshrc
->                                                                                        
+>                                                                                              
 >    open ~/.zshrc
->                                                                                        
+>                                                                                              
 >    # 在文件最后添加下面两句
 >    export http_proxy="http://127.0.0.1:8234" export https_proxy="http://127.0.0.1:8234"
 >    ```
@@ -224,14 +224,14 @@ VPN开启后Chrome可翻墙，终端不行
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->                 
+>                         
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->                 
+>                         
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 >
@@ -787,4 +787,37 @@ VPN开启后Chrome可翻墙，终端不行
 2. 检测IP
 
    ![image-20260404225432899](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20260404225432899.png)
+
+##### 禁用 Parallels 自动更新
+
+```bash
+# 查看当前 host
+cat /etc/hosts ~/Desktop/hosts
+
+# 备份 hosts 到桌面
+sudo cp /etc/hosts ~/Desktop/hosts.backup
+
+# 添加屏蔽规则
+sudo tee -a /etc/hosts > /dev/null << 'EOF'
+# Block Parallels Desktop update checks
+127.0.0.1 update.parallels.com
+127.0.0.1 download.parallels.com
+127.0.0.1 desktop.parallels.com
+127.0.0.1 static.parallels.com
+::1 update.parallels.com
+::1 download.parallels.com
+::1 desktop.parallels.com
+::1 static.parallels.com
+# End Parallels block
+EOF
+
+# 刷新 DNS 缓存
+sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder
+
+# 验证是否生效
+ping -c 2 update.parallels.com
+# 输出 PING update.parallels.com (127.0.0.1): 56 data bytes
+# 64 bytes from 127.0.0.1: icmp_seq=0 ttl=64 time=0.134 ms
+# 则生效了
+```
 

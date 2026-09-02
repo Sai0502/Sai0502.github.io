@@ -1878,12 +1878,11 @@
    
 1. 常用快捷键
 
-   ![image-20260902165735543](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202609021657628.png)
+   ![image-20260902172220962](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202609021722046.png)
    
-   1. m：放大镜查看 K 线内部订单轨迹
-   2. Control：放大镜查看挂单数量
-   3. Control + 1：自定义的回放模式「开始/暂停」
-   4. 
+   1. Control + 1：自定义的回放模式「开始/暂停」
+   2. Z：放大镜查看 K 线内部订单轨迹
+   3. **按住 Control + 点击：放大镜查看挂单数量**（这个不能修改）
    
 
 #  北极星账号打造

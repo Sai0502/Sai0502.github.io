@@ -1871,19 +1871,40 @@
 1. 数据链接
 
    ![image-20260902122403386](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202609021224070.png)
-   
+
 1. 市场回放
 
    ![image-20260902153258603](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202609021532684.png)
-   
+
 1. 常用快捷键
 
    ![image-20260902172220962](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202609021722046.png)
-   
+
    1. Control + 1：自定义的回放模式「开始/暂停」
    2. Z：放大镜查看 K 线内部订单轨迹
    3. **按住 Control + 点击：放大镜查看挂单数量**（这个不能修改）
-   
+
+1. Atas 桥接 Ninja 下单
+
+   1. 下载 [NinjaTrader](https://account.ninjatrader.com/welcome)
+
+      ![image-20260904173052865](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202609041730988.png)
+
+   2. NinjaTrader 软件设置
+
+      ![image-20260904180647917](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202609041806022.png)
+
+   3. Atas 安装 Ninja 插件
+
+      ![image-20260904173704602](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202609041737690.png)
+
+   4. Atas 设置
+
+      ![image-20260904181451990](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202609041814157.png)
+
+   5. 备注
+
+      * Ninja上每次增加品种，都要重启Atas，才能交易
 
 #  北极星账号打造
 

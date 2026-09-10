@@ -127,6 +127,7 @@
    | **停止所有宏**                                               | ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202306091847693.png) |
    | **录音**                                                     | ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202306031102821.png) |
    | **锁屏**                                                     | ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202306031104819.png) |
+   | **点击指定位置**                                             | ![image-20260907210242357](/Users/sai/Library/Application Support/typora-user-images/image-20260907210242357.png) |
    | **防止Motrix误退出**<br /><br />如果「Motrix」在顶部，弹窗提示是否退出<br />1. 若「continue」，则执行后续动作<br />2. 若「stop」则到此为止 | ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202306211412581.png) |
    | **模拟Alfred搜索KM脚本**<br/><br/>1. 创建一个Sai Search Group，所有不想设置快捷键的宏都放这里<br/><br/>2. 在Sai Global新建一个宏Trigger by Sai Search | ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202306031536092.png) |
    | **KM自带OCR**<br/><br/>[Keyboard Maestro ，在多语言环境中轻松抓取文字](https://utgd.net/article/9528)、[在 Mac 上随时提取屏幕上的文字](https://www.notion.so/Mac-b7ded7e6bfb6408d99f61832c043570a)<br /><br />1. 执行系统区域截图<br />2. 按下左键，等待左键松开<br />3. 松开左键<br />4. 等待系统反应0.5秒<br />5. 对剪贴板进行OCR，并将识别结果存入剪贴板<br />6. 处理剪贴板中的文本<br />7. 处理完成后发个系统通知 | ![](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202306031545004.png) |
@@ -153,32 +154,32 @@
    >    
    >    ```
    >    #!/usr/bin/python3
-   >                      
+   >                         
    >    # -*- coding: utf-8 -*-
-   >                      
+   >                         
    >    # encoding=utf8
-   >                      
+   >                         
    >    from aip import AipOcr
    >    import sys,io
    >    sys.stdout=io.TextIOWrapper(sys.stdout.buffer,encoding='utf8')
-   >                      
+   >                         
    >    """ 你的 APPID AK SK """
    >    APP_ID = '34338402'
    >    API_KEY = 'GVeTGTZdRIiH3AphNQtumCk4'
    >    SECRET_KEY = 'csTzqbvYHbj8XGMnIgCAOtN7Gq1Ra58H'
-   >                      
+   >                         
    >    client = AipOcr(APP_ID, API_KEY, SECRET_KEY)
-   >                      
+   >                         
    >    def get_file_content(file):
    >     with open(file, 'rb') as fp:
    >         return fp.read()
-   >                      
+   >                         
    >    def img_to_str(image_path):
    >     image = get_file_content(image_path)
    >     result = client.basicGeneral(image)
    >     if 'words_result' in result:
    >         return u'\n'.join([w['words'] for w in result['words_result']])
-   >                      
+   >                         
    >    print(img_to_str(image_path='/Users/jiangsai/Downloads/1.png'))
    >    ```
    

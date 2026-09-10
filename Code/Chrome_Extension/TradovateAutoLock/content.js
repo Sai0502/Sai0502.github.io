@@ -1,6 +1,6 @@
 (function () {
 const SCRIPT_VERSION = '2026-07-21-live-state-step4-button-v31';
-const SCRIPT_BUILD_LABEL = 'Tradovate PL Auto Lock v0824_2341';
+const SCRIPT_BUILD_LABEL = 'Tradovate PL Auto Lock v0907_1818';
 if (window.__tradovateAutoLockLoaded === SCRIPT_VERSION) return;
 window.__tradovateAutoLockLoaded = SCRIPT_VERSION;
 
@@ -545,8 +545,37 @@ function hasActiveLockoutForPrompt() {
 }
 
 function matchTradovateAccountId(text) {
-  const match = String(text || '').match(/\b[A-Z]{2,}\d{8,}\b/);
+  const match = String(text || '').match(/\b[A-Z]{2,}\d{4,}\b/);
   return match ? match[0] : '';
+}
+
+function extractAccountFromTopBar() {
+  const manualLockBtn = document.querySelector('button.manual-lockout-button, .manual-lockout-button');
+  if (!manualLockBtn) return '';
+
+  const lockRect = manualLockBtn.getBoundingClientRect();
+  if (!lockRect || lockRect.width === 0) return '';
+
+  const lockRight = lockRect.right;
+  const lockTop = lockRect.top;
+  const lockBottom = lockRect.bottom;
+
+  const candidates = allVisibleElements()
+    .map(el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.left < lockRight - 10) return null;
+      if (rect.bottom < lockTop - 8 || rect.top > lockBottom + 8) return null;
+      const own = ownOrShortText(el);
+      const text = (own || textOf(el) || '').trim();
+      if (!text || text.length < 8 || text.length > 40) return null;
+      if (!/^[A-Za-z0-9]+$/.test(text)) return null;
+      if (/^(手动锁定|锁定账户|Lock\s*Account|USD|CDT)$/i.test(text)) return null;
+      return { el, text, rect };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.rect.left - b.rect.left);
+
+  return candidates.length ? candidates[0].text : '';
 }
 
 function manualLockButtonsInfo() {
@@ -1425,7 +1454,36 @@ function tradingDateKeyBeijing() {
   return `${y}-${m}-${day}`;
 }
 
+let cachedWsAccountName = '';
+
+async function refreshWsAccountCache() {
+  try {
+    const data = await storageGet({ [WS_CAPTURE_STORAGE_KEY]: null });
+    const capture = data[WS_CAPTURE_STORAGE_KEY];
+    if (capture && Array.isArray(capture.accountMappings) && capture.accountMappings.length) {
+      const first = capture.accountMappings[0];
+      const name = (first && (first.name || first.accountName || first.displayName)) || '';
+      if (name && name !== 'default') {
+        cachedWsAccountName = name;
+        return;
+      }
+    }
+    if (capture && capture.tradeStatsByAccount && typeof capture.tradeStatsByAccount === 'object') {
+      const keys = Object.keys(capture.tradeStatsByAccount).filter(k => k && k !== 'default');
+      if (keys.length) {
+        cachedWsAccountName = keys[0];
+      }
+    }
+  } catch (_) {
+  }
+}
+
 function extractTradovateAccountId() {
+  const fromTopBar = extractAccountFromTopBar();
+  if (fromTopBar) return fromTopBar;
+
+  if (cachedWsAccountName) return cachedWsAccountName;
+
   const fromBody = matchTradovateAccountId(textOf(document.body));
   if (fromBody) return fromBody;
 
@@ -2775,7 +2833,7 @@ async function executeNewAccountLockoutAfterManualOpen(cfg, modalRoot, preferred
   if (!confirmRoot) throw new Error('找不到新版二次确认弹窗');
 
   const confirmAccountIds = Array.from(new Set(
-    Array.from(textOf(confirmRoot).matchAll(/\b[A-Z]{2,}\d{8,}\b/g), match => match[0])
+    Array.from(textOf(confirmRoot).matchAll(/\b[A-Z]{2,}\d{4,}\b/g), match => match[0])
   ));
   if (!confirmAccountIds.includes(selected.accountId) || confirmAccountIds.some(accountId => accountId !== selected.accountId)) {
     const backButton = findActionByText(confirmRoot, /不[，,]?\s*返回|取消|返回|No.*Back|Cancel/i, {
@@ -3620,6 +3678,7 @@ async function monitorLoop() {
   if (monitorLoopRunning) return;
   monitorLoopRunning = true;
   let cfg = null;
+  await refreshWsAccountCache();
   const accountId = extractTradovateAccountId();
   try {
     cfg = await readMonitorSettings(accountId);
@@ -3710,5 +3769,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 restoreLockoutOverlay().catch(err => {
   if (!isExtensionContextInvalidated(err)) console.warn('[TradovateAutoLock] failed to restore lockout overlay:', err);
 });
+refreshWsAccountCache();
 monitorLoop();
 })();

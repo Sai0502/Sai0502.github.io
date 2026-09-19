@@ -392,7 +392,7 @@ def run_job(model: WhisperModel, job: Job, segment_seconds: int, ffmpeg_path: st
         final_text = simplify_text(transcribe_audio_file(model, job.src))
 
     atomic_write_text(job.final_txt, final_text + ("\n" if final_text else ""))
-    print(f"  转录完成：{job.final_txt}")
+    print(f"  转录完成：（{datetime.now():%m-%d %H:%M}）{job.final_txt.name}")
 
 
 # ============================ 图形界面 ============================

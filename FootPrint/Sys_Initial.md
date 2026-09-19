@@ -56,9 +56,9 @@ VPN开启后Chrome可翻墙，终端不行
 >    ```bash
 >    # 创建 .zshrc 文件
 >    echo >> ~/.zshrc
->                                                                                                    
+>                                                                                                       
 >    open ~/.zshrc
->                                                                                                    
+>                                                                                                       
 >    # 在文件最后添加下面两句
 >    export http_proxy="http://127.0.0.1:8234" export https_proxy="http://127.0.0.1:8234"
 >    ```
@@ -224,14 +224,14 @@ VPN开启后Chrome可翻墙，终端不行
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->                                 
+>                                     
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->                                 
+>                                     
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 >
@@ -246,7 +246,7 @@ VPN开启后Chrome可翻墙，终端不行
 > echo >> ~/.config/mpv/input.conf
 > 
 > # 打开 input.conf 文件
-> nano ~/.config/mpv/input.conf
+> open ~/.config/mpv/input.conf
 > 
 > # 复制到该文件
 > # ----------------------------------------
@@ -269,6 +269,15 @@ VPN开启后Chrome可翻墙，终端不行
 > WHEEL_DOWN add volume 2
 > 
 > Ctrl + O 保存，Enter 键确认保存，Ctrl + X 退出 nano 编辑器
+> 
+> # 创建 mpv.conf 文件
+> echo >> ~/.config/mpv/mpv.conf
+> 
+> # 打开 mpv.conf 文件
+> open ~/.config/mpv/mpv.conf
+> 
+> # 播放当前文件时无限循环
+> loop-file=inf
 > ```
 >
 > * 缩放MPV：按住 control + 滚动面板/滚动鼠标滚轮
@@ -282,7 +291,7 @@ VPN开启后Chrome可翻墙，终端不行
 >          do shell script "open -n /Applications/mpv.app"
 >          tell application "mpv" to activate
 >      end run
->      
+>
 >      on open theFiles
 >          repeat with theFile in theFiles
 >              -- 对路径进行适当的转义
@@ -292,7 +301,7 @@ VPN开启后Chrome可翻墙，终端不行
 >          end repeat
 >          tell application "mpv" to activate
 >      end open
->      
+>
 >      ```
 >
 >   2. 保存

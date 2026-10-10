@@ -1,6 +1,6 @@
 (function () {
-const SCRIPT_VERSION = '2026-07-21-live-state-step4-button-v31';
-const SCRIPT_BUILD_LABEL = 'Tradovate PL Auto Lock v0907_1818';
+const SCRIPT_VERSION = '2026-09-23-unified-custom-time-v33';
+const SCRIPT_BUILD_LABEL = 'Tradovate PL Auto Lock v0923_2252';
 if (window.__tradovateAutoLockLoaded === SCRIPT_VERSION) return;
 window.__tradovateAutoLockLoaded = SCRIPT_VERSION;
 
@@ -134,7 +134,7 @@ const STEPS = [
     name: '锁定时间选项',
     label: '第 3 步：准备点击锁定时间选项',
     clicked: '已选择锁定时间，正在查找最终“锁定交易”按钮',
-    pattern: /交易日结束|中部标准|下午\s*4\s*点|4\s*pm|15\s*分钟|15\s*min|30\s*分钟|30\s*min|1\s*小时|1\s*hour|60\s*min/i,
+    pattern: /交易日结束|中部标准|下午\s*4\s*点|4\s*pm|15\s*分钟|15\s*min|30\s*分钟|30\s*min|1\s*小时|1\s*hour|60\s*min|自定义|custom/i,
     options: {
       excludeLastClicked: true,
       ignoreAriaExpanded: true,
@@ -217,6 +217,7 @@ function debugLog(event, details = {}) {
 
 function lockDurationFromText(text, fallback = 'end_of_day') {
   const value = String(text || '');
+  if (/自定义|custom|until/i.test(value)) return fallback;
   if (/15\s*分钟|15\s*min/i.test(value)) return '15m';
   if (/30\s*分钟|30\s*min/i.test(value)) return '30m';
   if (/1\s*小时|1\s*hour|60\s*min/i.test(value)) return '1h';
@@ -276,7 +277,68 @@ function marketSessionEndMs(now = Date.now()) {
   return end;
 }
 
+function custom2100ExpiresAt(now = Date.now()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  }).formatToParts(new Date(now));
+  const obj = Object.fromEntries(parts.filter(p => p.type !== 'literal').map(p => [p.type, Number(p.value)]));
+  let target = new Date(obj.year, obj.month - 1, obj.day, 21, 0, 0).getTime();
+  if (target <= now) {
+    target = new Date(obj.year, obj.month - 1, obj.day + 1, 21, 0, 0).getTime();
+  }
+  return target;
+}
+
+function parseCustomDuration(lockDuration) {
+  const m = /^custom_(\d{2})(\d{2})$/.exec(String(lockDuration || ''));
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+  return { hour: h, minute: min };
+}
+
+function parseBeijingWallTime(str) {
+  const m = /^\s*(\d{1,2})\s*[:：点]\s*(\d{1,2})\s*$/.exec(String(str || ''));
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+  return { hour: h, minute: min };
+}
+
+function customTimeExpiresAt(hour24, minute, now = Date.now()) {
+  const parts = timePartsInZone(new Date(now), 'Asia/Shanghai');
+  let target = zonedWallTimeToUtcMs({
+    year: parts.year, month: parts.month, day: parts.day, hour: hour24, minute
+  }, 'Asia/Shanghai');
+  if (target <= now) {
+    target = zonedWallTimeToUtcMs({
+      year: parts.year, month: parts.month, day: parts.day + 1, hour: hour24, minute
+    }, 'Asia/Shanghai');
+  }
+  return target;
+}
+
+function expectedChicagoPreviewLabel(hour24, minute, now = Date.now()) {
+  const expiresAt = customTimeExpiresAt(hour24, minute, now);
+  const parts = timePartsInZone(new Date(expiresAt), 'America/Chicago');
+  const h = parts.hour;
+  const period = h >= 12 ? 'PM' : 'AM';
+  let h12 = h % 12;
+  if (h12 === 0) h12 = 12;
+  return `${h12}:${String(parts.minute).padStart(2, '0')} ${period}`;
+}
+
+function normalizeCtLabel(s) {
+  return String(s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+}
+
 function lockExpiresAt(lockDuration, lockedAt = Date.now()) {
+  const custom = parseCustomDuration(lockDuration);
+  if (custom) return customTimeExpiresAt(custom.hour, custom.minute, lockedAt);
+  if (lockDuration === 'custom_2100') return custom2100ExpiresAt(lockedAt);
   const fixedMs = lockDurationMs(lockDuration);
   if (fixedMs) return lockedAt + fixedMs;
   return marketSessionEndMs(lockedAt);
@@ -2175,6 +2237,19 @@ async function nextStep() {
     clickCurrentTarget();
     currentStep += 1;
     await sleep(step.waitAfterClickMs);
+    // 新流程：点了"自定义"后会弹出自定义时间子弹窗，先填时间并点"设置时间"关掉它，再认锁定按钮
+    try {
+      const testCfg = await readMonitorSettings();
+      const testCustom = parseCustomDuration(testCfg.lockDuration);
+      if (testCustom) {
+        debugLog('step_test.custom_fill_start', { hour: testCustom.hour, minute: testCustom.minute });
+        await setCustomLockTime(testCustom.hour, testCustom.minute, 8000);
+        await sleep(500);
+      }
+    } catch (fillErr) {
+      debugLog('step_test.custom_fill_failed', { error: fillErr && fillErr.message ? fillErr.message : String(fillErr) });
+      throw fillErr;
+    }
     const oldModalStillOpen = document.body.classList.contains('modal-open') || Boolean(document.querySelector('.manual-lockout-modal'));
     const oldLockButtonExists = Boolean(document.querySelector(
       'button.manual-lockout-modal__button--warning, .manual-lockout-modal__button--warning'
@@ -2259,6 +2334,7 @@ async function waitForSelector(selector, timeoutMs = 5000) {
 }
 
 function lockDurationPattern(lockDuration = 'end_of_day') {
+  if (parseCustomDuration(lockDuration)) return /自定义|custom/i;
   if (lockDuration === '15m') return /15\s*分钟|15\s*min/i;
   if (lockDuration === '30m') return /30\s*分钟|30\s*min/i;
   if (lockDuration === '1h') return /1\s*小时|1\s*hour|60\s*min/i;
@@ -2266,6 +2342,8 @@ function lockDurationPattern(lockDuration = 'end_of_day') {
 }
 
 function lockDurationLabel(lockDuration = 'end_of_day') {
+  const custom = parseCustomDuration(lockDuration);
+  if (custom) return `锁到 ${String(custom.hour).padStart(2, '0')}:${String(custom.minute).padStart(2, '0')}`;
   if (lockDuration === '15m') return '15分钟';
   if (lockDuration === '30m') return '30分钟';
   if (lockDuration === '1h') return '1小时';
@@ -2530,6 +2608,215 @@ async function findNewLockDurationOptionTarget(lockDuration = 'end_of_day', time
     await sleep(150);
   }
   return null;
+}
+
+async function setCustomLockTime(hour24, minute, timeoutMs = 8000) {
+  const started = Date.now();
+  let customModal = null;
+  while (Date.now() - started < timeoutMs) {
+    customModal = findVisibleModalRootByText(/设置自定义锁定时间|自定义锁定时间|Set.*custom.*lock/i, [
+      /本地解锁时间|设置时间|返回|Local.*unlock/i
+    ]);
+    if (customModal) break;
+    await sleep(150);
+  }
+  if (!customModal) throw new Error('找不到"设置自定义锁定时间"弹窗');
+
+  debugLog('real_lockout.custom_time_modal_found', { targetHour: hour24, targetMinute: minute });
+
+  try {
+    return await fillCustomLockTime(customModal, hour24, minute);
+  } catch (err) {
+    debugLog('real_lockout.custom_time_set_failed', {
+      error: err && err.message ? err.message : String(err),
+      modalSnippet: shortOuterHtml(customModal, 1500)
+    });
+    throw err;
+  }
+}
+
+function collectCustomTimeFields(modal) {
+  const selectors = [
+    'input',
+    '[role="spinbutton"]',
+    '[role="textbox"]',
+    '[contenteditable="true"]',
+    '.MuiInputBase-input',
+    '[class*="time"] input',
+    '[class*="Time"] input'
+  ];
+  const seen = new Set();
+  const fields = [];
+  for (const selector of selectors) {
+    modal.querySelectorAll(selector).forEach(el => {
+      if (!isVisible(el) || seen.has(el)) return;
+      seen.add(el);
+      fields.push(el);
+    });
+  }
+  return fields;
+}
+
+function setNativeFieldValue(field, value) {
+  if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) {
+    const proto = field.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    const desc = Object.getOwnPropertyDescriptor(proto, 'value');
+    if (desc && desc.set) desc.set.call(field, value);
+    else field.value = value;
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    field.dispatchEvent(new Event('change', { bubbles: true }));
+    return;
+  }
+  if (field.isContentEditable) {
+    field.textContent = value;
+    field.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: value }));
+    return;
+  }
+  field.textContent = value;
+  field.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+async function typeIntoField(field, value) {
+  try { field.focus({ preventScroll: true }); } catch (_) {}
+  await sleep(60);
+  try { if (typeof field.select === 'function') field.select(); } catch (_) {}
+  try { document.execCommand('selectAll', false, null); } catch (_) {}
+  try {
+    const ok = document.execCommand('insertText', false, value);
+    if (ok) {
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      field.dispatchEvent(new Event('change', { bubbles: true }));
+      return;
+    }
+  } catch (_) {}
+  setNativeFieldValue(field, value);
+}
+
+async function commitCustomTimeInputs(customModal) {
+  // 输入框失焦后 React 才会提交值并重算"芝加哥时间"预览。
+  // 合成 mousedown 不会触发原生 blur，所以直接：
+  // 1) 对每个时间输入框派发 focusout/blur；
+  // 2) 把焦点 .focus() 到"返回"按钮上（直接 DOM focus 会强制原输入框失焦）。
+  const fields = collectCustomTimeFields(customModal);
+  fields.forEach(f => {
+    try {
+      f.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+      f.dispatchEvent(new FocusEvent('blur', { bubbles: false }));
+      if (typeof f.blur === 'function') f.blur();
+    } catch (_) {}
+  });
+  try {
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
+  } catch (_) {}
+  const backBtn = findActionByText(customModal, /返回|Back/i, { preferActionButton: true });
+  if (backBtn && typeof backBtn.focus === 'function') {
+    try { backBtn.focus(); } catch (_) {}
+  }
+  debugLog('real_lockout.custom_time_committed', {
+    fieldCount: fields.length,
+    hasBackBtn: Boolean(backBtn),
+    activeTag: document.activeElement ? document.activeElement.tagName + '.' + (document.activeElement.className || '').toString().slice(0,40) : 'none'
+  });
+  await sleep(800);
+}
+
+function readChicagoPreview(modal) {
+  const walker = document.createTreeWalker(modal, NodeFilter.SHOW_TEXT);
+  let node;
+  while ((node = walker.nextNode())) {
+    const t = node.nodeValue || '';
+    let m = t.match(/芝加哥时间[：:]\s*(\d{1,2}:\d{2}\s*(?:AM|PM))/i);
+    if (!m) m = t.match(/(\d{1,2}:\d{2}\s*(?:AM|PM))\s*CT/i);
+    if (m) return m[1].trim();
+  }
+  return null;
+}
+
+async function setCustomPeriod(customModal, period) {
+  const wantRe = period === 'pm' ? /pm|下午/i : /am|上午/i;
+  // 1) 原生 select 兜底
+  const periodSelect = customModal.querySelector('select');
+  if (periodSelect) {
+    const opt = Array.from(periodSelect.options).find(o => wantRe.test(o.textContent || o.value));
+    if (opt) {
+      periodSelect.value = opt.value;
+      periodSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      await sleep(200);
+      debugLog('real_lockout.period_set', { via: 'native-select', period });
+      return;
+    }
+  }
+  // 2) 自定义下拉按钮：找到弹窗里显示 am/pm 的触发按钮并点开
+  const trig = Array.from(customModal.querySelectorAll('button,[role="button"],[role="combobox"]'))
+    .find(el => isVisible(el) && /^\s*(am|pm|上午|下午)\s*$/i.test(textOf(el) || ''));
+  if (!trig) {
+    debugLog('real_lockout.period_trigger_not_found', { period });
+    return;
+  }
+  clickExact(trig);
+  await sleep(350);
+  // 3) 在弹出的菜单里点目标项（菜单渲染在弹窗 DOM 内，排除触发按钮本身）
+  await sleep(150);
+  const options = Array.from(document.querySelectorAll('button,[role="option"],[role="menuitem"],li,div,span'))
+    .filter(el => isVisible(el) && el !== trig && !trig.contains(el)
+      && /^\s*(am|pm|上午|下午)\s*$/i.test((textOf(el) || '').trim())
+      && wantRe.test((textOf(el) || '').trim()));
+  if (options.length) {
+    clickExact(options[0]);
+    await sleep(300);
+    debugLog('real_lockout.period_set', { via: 'custom-dropdown', period, optionCount: options.length, optionText: textOf(options[0]) });
+  } else {
+    // 兜底：列出弹窗内所有可见文本，便于诊断
+    const nearby = Array.from(customModal.querySelectorAll('*'))
+      .filter(el => isVisible(el) && el.children.length === 0)
+      .map(el => (textOf(el) || '').trim())
+      .filter(t => /am|pm/i.test(t));
+    debugLog('real_lockout.period_option_not_found', { period, nearbyTexts: nearby.slice(0, 10) });
+  }
+}
+
+async function fillCustomLockTime(customModal, hour24, minute) {
+  const isPM = hour24 >= 12;
+  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  const hourStr = String(hour12);
+  const minuteStr = String(minute).padStart(2, '0');
+  const period = isPM ? 'pm' : 'am';
+  const expected = expectedChicagoPreviewLabel(hour24, minute);
+
+  let lastRead = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const fields = collectCustomTimeFields(customModal);
+    if (fields.length < 2) {
+      throw new Error('自定义锁定时间弹窗中找不到时间输入框（共找到 ' + fields.length + ' 个候选，弹窗内容已写入诊断）');
+    }
+    await typeIntoField(fields[0], hourStr);
+    await sleep(220);
+    await typeIntoField(fields[1], minuteStr);
+    await sleep(220);
+    await setCustomPeriod(customModal, period);
+    await commitCustomTimeInputs(customModal);
+    lastRead = readChicagoPreview(customModal);
+    debugLog('real_lockout.custom_time_attempt', {
+      attempt, hourStr, minuteStr, period, expected, lastRead
+    });
+    if (lastRead && normalizeCtLabel(lastRead) === normalizeCtLabel(expected)) {
+      const setTimeButton = findActionByText(customModal, /设置时间|Set\s*time|确认/i, {
+        preferActionButton: true,
+        preferLower: true,
+        preferRight: true
+      });
+      if (!setTimeButton) throw new Error('找不到"设置时间"按钮');
+      clickExact(setTimeButton);
+      await sleep(600);
+      debugLog('real_lockout.custom_time_set', {
+        hour: hourStr, minute: minuteStr, period, ct: lastRead, attempt
+      });
+      return true;
+    }
+  }
+  throw new Error(`填入 ${hourStr}:${minuteStr} ${period} 后，弹窗芝加哥时间预览为 "${lastRead || '未读到'}"，期望 "${expected}"，已重试3次仍不一致`);
 }
 
 async function findAccountDurationSelectTarget(timeoutMs = 5000) {
@@ -2810,6 +3097,11 @@ async function executeNewAccountLockoutAfterManualOpen(cfg, modalRoot, preferred
   clickSavedStepTarget(option, 2, 'new duration option');
   await sleep(500);
 
+  const customParts = parseCustomDuration(cfg.lockDuration);
+  if (customParts) {
+    await setCustomLockTime(customParts.hour, customParts.minute, 8000);
+  }
+
   const refreshedRoot = findNewAccountLockModalRoot() || modalRoot;
   const selectedLockText = rowTextNearY(refreshedRoot, selected.rect.top + selected.rect.height / 2, 54) || textOf(option);
   const actualLockDuration = lockDurationFromText(selectedLockText, cfg.lockDuration);
@@ -2896,10 +3188,23 @@ async function executeNewAccountLockoutAfterManualOpen(cfg, modalRoot, preferred
   };
 }
 
-async function executeRealLockout() {
+async function executeRealLockout(options = {}) {
   clearHighlight();
   suppressPagePrompts('execute_real_lockout');
   const cfg = await readMonitorSettings();
+  let targetTime = options.targetTime;
+  if (!targetTime) {
+    const existing = parseCustomDuration(cfg.lockDuration);
+    targetTime = existing
+      ? `${String(existing.hour).padStart(2, '0')}:${String(existing.minute).padStart(2, '0')}`
+      : '04:00';
+  }
+  const parsedTarget = parseBeijingWallTime(targetTime);
+  if (parsedTarget) {
+    cfg.lockTargetTime = `${String(parsedTarget.hour).padStart(2, '0')}:${String(parsedTarget.minute).padStart(2, '0')}`;
+    cfg.lockDuration = `custom_${String(parsedTarget.hour).padStart(2, '0')}${String(parsedTarget.minute).padStart(2, '0')}`;
+  }
+  debugLog('real_lockout.target_resolved', { targetTime, lockDuration: cfg.lockDuration });
   await loadOffsets();
   const preferredAccountId = extractTradovateAccountId();
   if (!preferredAccountId || preferredAccountId === 'default') {
@@ -3402,9 +3707,7 @@ async function readMonitorSettings(accountId = extractTradovateAccountId()) {
       : Boolean(cfg.tradeCountLockEnabled),
     dailyEntryLimit: Number(scoped && scoped.dailyEntryLimit) > 0
       ? Number(scoped.dailyEntryLimit)
-      : Number(cfg.dailyEntryLimit || 30),
-    autoMonitorEnabled: true,
-    autoLockEnabled: true
+      : Number(cfg.dailyEntryLimit || 30)
   };
 }
 
@@ -3599,7 +3902,7 @@ async function monitorScan({ manual = false } = {}) {
   }, result.accountId);
 
   try {
-    const lockResult = await executeRealLockout();
+    const lockResult = await executeRealLockout({ targetTime: '04:00' });
     await setAutoLockState({
       status: 'locked',
       lockKey,
@@ -3736,7 +4039,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'tradovate-auto-lock:next') task = nextStep();
   if (message.type === 'tradovate-auto-lock:test') task = runAutoLockTest();
   if (message.type === 'tradovate-auto-lock:debug-locate-final') task = locateStep(3);
-  if (message.type === 'tradovate-auto-lock:execute-real-lockout') task = executeRealLockout();
+  if (message.type === 'tradovate-auto-lock:execute-real-lockout') task = executeRealLockout({ targetTime: message.targetTime });
   if (message.type === 'tradovate-auto-lock:scan-now') task = monitorScan({ manual: true });
   if (message.type === 'tradovate-auto-lock:ensure-monitor-loop') task = ensureMonitorLoop();
   if (message.type === 'tradovate-auto-lock:read-current-page-state') task = readCurrentPageState();

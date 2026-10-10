@@ -379,6 +379,16 @@ button:first-child {
   margin-top: 0;
 }
 
+.action-row-dual {
+  grid-template-columns: 1fr 1fr;
+}
+
+.action-row-dual button {
+  font-size: 13px;
+  padding: 10px 8px;
+  white-space: nowrap;
+}
+
 .button-row:has(.hidden) {
   grid-template-columns: 1fr;
 }
@@ -476,3 +486,14 @@ button:disabled {
 
 #flowStatus.good { color: var(--good); }
 #flowStatus.bad { color: var(--bad); }
+
+.lock-rows { display: grid; gap: 8px; margin-top: 8px; }
+.lock-divider { height: 1px; background: var(--line); margin: 0; }
+.lock-row { display: grid; gap: 3px; }
+.lock-row-main { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.lock-time-input { width: 100%; min-height: 38px; text-align: center; font-size: 16px; font-weight: 800; letter-spacing: 1px; }
+.lock-row-btn { width: 92px; margin-top: 0; }
+.lock-row-hint { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
+.settings-section .save-status { margin-top: 2px; min-height: 0; }
+.settings-section { padding-bottom: 6px; }
+.diagnostics-section { padding-top: 4px; }

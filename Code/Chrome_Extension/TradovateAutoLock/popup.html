@@ -8,7 +8,7 @@
 </head>
 <body>
   <header>
-    <h1 id="appTitle">Tradovate PL Auto Lock v0907_1818</h1>
+    <h1 id="appTitle">Tradovate PL Auto Lock v0923_2252</h1>
   </header>
 
   <main id="panelContent">
@@ -49,19 +49,23 @@
             <input id="scanIntervalSeconds" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
           </label>
         </div>
-        <label class="setting-row setting-row-wide">
-          <span>锁定周期</span>
-          <select id="lockDuration">
-            <option value="end_of_day">交易日结束 - NY 16:00</option>
-            <option value="15m">15分钟</option>
-            <option value="30m">30分钟</option>
-            <option value="1h">1小时</option>
-          </select>
-        </label>
       </div>
-      <div class="action-row">
-        <button id="lockSettings" class="warning" type="button">锁定设置</button>
-        <button id="executeLock" class="danger" type="button">立刻锁定账户</button>
+      <div class="lock-divider"></div>
+      <div class="lock-rows">
+        <div class="lock-row">
+          <div class="lock-row-main">
+            <input id="lockTimeRow1" class="lock-time-input" type="text" inputmode="numeric" maxlength="5" placeholder="21:00" autocomplete="off">
+            <button id="lockRow1Btn" class="warning lock-row-btn" type="button">立即锁定</button>
+          </div>
+          <p class="lock-row-hint" id="lockHint1"></p>
+        </div>
+        <div class="lock-row">
+          <div class="lock-row-main">
+            <input id="lockTimeRow2" class="lock-time-input" type="text" inputmode="numeric" maxlength="5" placeholder="04:00" autocomplete="off">
+            <button id="lockRow2Btn" class="danger lock-row-btn" type="button">立即锁定</button>
+          </div>
+          <p class="lock-row-hint" id="lockHint2"></p>
+        </div>
       </div>
       <p id="saveStatus" class="save-status" aria-live="polite"></p>
     </section>

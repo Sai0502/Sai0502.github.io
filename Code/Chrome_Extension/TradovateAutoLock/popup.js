@@ -5,7 +5,9 @@ const DEFAULTS = {
   dailyLossLimit: 200,
   dailyProfitTarget: 300,
   scanIntervalSeconds: 60,
-  lockDuration: 'end_of_day',
+  lockDuration: 'custom_2100',
+  lockTimeRow1: '21:00',
+  lockTimeRow2: '04:00',
   tradeCountLockEnabled: false,
   dailyEntryLimit: 30,
   lastPnl: null,
@@ -21,8 +23,12 @@ const DEFAULTS = {
 const startButton = document.getElementById('start');
 const nextButton = document.getElementById('next');
 const clearButton = document.getElementById('clear');
-const executeLockButton = document.getElementById('executeLock');
-const lockSettingsButton = document.getElementById('lockSettings');
+const lockRow1Btn = document.getElementById('lockRow1Btn');
+const lockRow2Btn = document.getElementById('lockRow2Btn');
+const lockTimeRow1Input = document.getElementById('lockTimeRow1');
+const lockTimeRow2Input = document.getElementById('lockTimeRow2');
+const lockHint1El = document.getElementById('lockHint1');
+const lockHint2El = document.getElementById('lockHint2');
 const nudgeEl = document.getElementById('nudge');
 const resetOffsetButton = document.getElementById('resetOffset');
 const flowStatusEl = document.getElementById('flowStatus');
@@ -45,7 +51,6 @@ const WS_CAPTURE_STORAGE_KEY = 'tradovateWsCapture';
 const INTEGER_SETTING_IDS = ['dailyLossLimit', 'dailyProfitTarget', 'scanIntervalSeconds', 'dailyEntryLimit'];
 const LOCKABLE_SETTING_IDS = [
   ...INTEGER_SETTING_IDS,
-  'lockDuration',
   'tradeCountLockEnabled'
 ];
 let isBlockedPage = false;
@@ -58,7 +63,7 @@ let scheduledLoadTimer = null;
 let scheduledRuntimeRefreshTimer = null;
 let lastDiagnosticBundle = null;
 let lastDiagnosticMarkdown = '';
-const POPUP_BUILD_LABEL = 'Tradovate PL Auto Lock v0907_1818';
+const POPUP_BUILD_LABEL = 'Tradovate PL Auto Lock v0923_2252';
 
 function applyPopupViewportHeight() {
   // Let Chrome size the extension popup naturally. If content exceeds Chrome's
@@ -174,8 +179,8 @@ function setBusy(isBusy) {
   nudgeEl.querySelectorAll('button').forEach(button => {
     button.disabled = disabled;
   });
-  executeLockButton.disabled = disabled;
-  lockSettingsButton.disabled = disabled || isSettingsLocked();
+  lockRow1Btn.disabled = disabled;
+  lockRow2Btn.disabled = disabled;
   applySettingsLockState();
 }
 
@@ -853,8 +858,6 @@ function applySettingsLockState() {
   for (const id of LOCKABLE_SETTING_IDS) {
     $(id).disabled = isBlockedPage || isDataLoading || locked;
   }
-  lockSettingsButton.disabled = isBlockedPage || isDataLoading || locked || isBusyState;
-  lockSettingsButton.textContent = locked ? '已锁定' : '锁定设置';
 }
 
 function hydrateSettingValue(id, value) {
@@ -944,7 +947,6 @@ async function load() {
       ? Number(scopedSettings.scanIntervalSeconds)
       : (data.scanIntervalSeconds || DEFAULTS.scanIntervalSeconds)
   );
-  hydrateSettingValue('lockDuration', (scopedSettings && scopedSettings.lockDuration) || data.lockDuration || 'end_of_day');
   const storedTradeCountLockEnabled = scopedSettings && typeof scopedSettings.tradeCountLockEnabled === 'boolean'
     ? scopedSettings.tradeCountLockEnabled
     : data.tradeCountLockEnabled;
@@ -954,6 +956,9 @@ async function load() {
       ? Number(scopedSettings.dailyEntryLimit)
       : (data.dailyEntryLimit || DEFAULTS.dailyEntryLimit)
   );
+  lockTimeRow1Input.value = normalizeTimeInput(scopedSettings && scopedSettings.lockTimeRow1, DEFAULTS.lockTimeRow1);
+  lockTimeRow2Input.value = normalizeTimeInput(scopedSettings && scopedSettings.lockTimeRow2, DEFAULTS.lockTimeRow2);
+  renderLockHints();
   applySettingsLockState();
   if (isSettingsLocked()) {
     saveStatusEl.textContent = `设置已锁定至北京时间 ${formatBeijingDateTime(settingsLockedUntil)}`;
@@ -1010,7 +1015,7 @@ function positiveIntegerFromInput(id, fallback) {
   return value;
 }
 
-async function saveSettings({ silent = false } = {}) {
+async function saveSettings({ silent = false, overrides = {} } = {}) {
   if (isBlockedPage) return null;
   if (isSettingsLocked()) {
     if (!silent) {
@@ -1026,7 +1031,9 @@ async function saveSettings({ silent = false } = {}) {
     dailyLossLimit: positiveIntegerFromInput('dailyLossLimit', DEFAULTS.dailyLossLimit),
     dailyProfitTarget: positiveIntegerFromInput('dailyProfitTarget', DEFAULTS.dailyProfitTarget),
     scanIntervalSeconds: positiveIntegerFromInput('scanIntervalSeconds', DEFAULTS.scanIntervalSeconds),
-    lockDuration: $('lockDuration').value || 'end_of_day',
+    lockDuration: overrides.lockDuration || 'custom_2100',
+    lockTimeRow1: normalizeTimeInput(lockTimeRow1Input.value, '21:00'),
+    lockTimeRow2: normalizeTimeInput(lockTimeRow2Input.value, '04:00'),
     tradeCountLockEnabled: Boolean($('tradeCountLockEnabled').checked),
     dailyEntryLimit: positiveIntegerFromInput('dailyEntryLimit', DEFAULTS.dailyEntryLimit)
   };
@@ -1071,63 +1078,95 @@ for (const id of INTEGER_SETTING_IDS) {
   });
 }
 
-$('lockDuration').addEventListener('change', () => {
-  saveSettings();
-});
-
 $('tradeCountLockEnabled').addEventListener('change', () => {
   saveSettings();
 });
 
-lockSettingsButton.addEventListener('click', async () => {
-  if (isBlockedPage || isSettingsLocked()) return;
-  const until = settingsUnlockAtBeijing4am();
-  if (!Number.isFinite(until) || until <= currentTimestamp()) {
-    await chrome.storage.local.set({ [settingsLockStorageKey()]: null, settingsLockedUntil: null });
-    settingsLockedUntil = null;
-    applySettingsLockState();
-    saveStatusEl.textContent = '当前已过本交易日锁定结束时间，设置未锁定';
-    saveStatusEl.className = 'save-status warn';
-    return;
-  }
-  await saveSettings({ silent: true });
-  await chrome.storage.local.set({
-    [settingsLockStorageKey()]: until,
-    settingsLockedUntil: null
-  });
-  settingsLockedUntil = until;
-  applySettingsLockState();
-  saveStatusEl.textContent = `设置已锁定至北京时间 ${formatBeijingDateTime(until)}`;
-  saveStatusEl.className = 'save-status warn';
-  await loadAccountContext();
-});
 
-executeLockButton.addEventListener('click', async () => {
+
+function normalizeTimeInput(value, fallback) {
+  const m = /^(\d{1,2})\s*[:：点]?\s*(\d{1,2})?$/.exec(String(value || '').trim());
+  if (!m) return fallback;
+  let h = Number(m[1]);
+  let min = m[2] !== undefined ? Number(m[2]) : 0;
+  if (Number.isNaN(h) || h < 0 || h > 23) return fallback;
+  if (Number.isNaN(min) || min < 0 || min > 59) min = 0;
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+}
+
+function describeLockTarget(timeStr) {
+  const m = /^(\d{2}):(\d{2})$/.exec(timeStr || '');
+  if (!m) return '';
+  const h = Number(m[1]);
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', hour12: false
+  }).formatToParts(now).reduce((acc, p) => (acc[p.type] = p.value, acc), {});
+  const nowH = Number(parts.hour);
+  let todayLabel = '';
+  if (h > nowH || (h === nowH && Number(m[2]) > 0)) todayLabel = '今晚';
+  else if (h === nowH && Number(m[2]) === 0) todayLabel = '此刻';
+  else todayLabel = '明天';
+  return `${todayLabel} ${timeStr}`;
+}
+
+function renderLockHints() {
+  const t1 = normalizeTimeInput(lockTimeRow1Input.value, DEFAULTS.lockTimeRow1);
+  const t2 = normalizeTimeInput(lockTimeRow2Input.value, DEFAULTS.lockTimeRow2);
+  lockHint1El.textContent = `锁定到${describeLockTarget(t1)}`;
+  lockHint2El.textContent = `锁定到${describeLockTarget(t2)}`;
+}
+
+async function triggerLock(targetTime) {
   if (isBlockedPage) return;
-  const lockText = $('lockDuration').selectedOptions[0]?.textContent || '交易日结束 - NY 16:00';
-  const ok = window.confirm(`确定立刻锁定账户？\n\n锁定选项：${lockText}`);
+  const timeStr = normalizeTimeInput(targetTime, DEFAULTS.lockTimeRow1);
+  const [hh, mm] = timeStr.split(':').map(Number);
+  const duration = `custom_${String(hh).padStart(2, '0')}${String(mm).padStart(2, '0')}`;
+  const ok = window.confirm(`确定立刻锁定账户？\n\n锁定到北京时间 ${timeStr}（下一次到达该时刻）`);
   if (!ok) return;
 
   setBusy(true);
-  executeLockButton.textContent = '锁定中...';
+  const original1 = lockRow1Btn.textContent;
+  const original2 = lockRow2Btn.textContent;
+  lockRow1Btn.textContent = '锁定中...';
+  lockRow2Btn.textContent = '锁定中...';
   try {
-    await saveSettings({ silent: true });
-    const result = await sendMessage('tradovate-auto-lock:execute-real-lockout');
+    await saveSettings({ silent: true, overrides: { lockDuration: duration } });
+    const result = await sendMessage('tradovate-auto-lock:execute-real-lockout', { targetTime: timeStr });
     if (!result || !result.ok) throw new Error(result && result.error ? result.error : '锁定失败');
-    saveStatusEl.textContent = '已发送锁定账户流程';
+    saveStatusEl.textContent = `已发送锁定流程 → 北京时间 ${timeStr}`;
     await load();
   } catch (err) {
     saveStatusEl.textContent = err && err.message ? err.message : String(err);
   } finally {
-    executeLockButton.textContent = '立刻锁定账户';
+    lockRow1Btn.textContent = original1;
+    lockRow2Btn.textContent = original2;
     setBusy(false);
   }
-});
+}
 
-startButton.addEventListener('click', () => {
+lockRow1Btn.addEventListener('click', () => triggerLock(lockTimeRow1Input.value));
+lockRow2Btn.addEventListener('click', () => triggerLock(lockTimeRow2Input.value));
+for (const input of [lockTimeRow1Input, lockTimeRow2Input]) {
+  input.addEventListener('input', renderLockHints);
+  input.addEventListener('change', () => {
+    input.value = normalizeTimeInput(input.value, DEFAULTS.lockTimeRow1);
+    saveSettings();
+    renderLockHints();
+  });
+}
+setInterval(renderLockHints, 30000);
+
+startButton.addEventListener('click', async () => {
   if (isBlockedPage) return;
+  const timeStr = normalizeTimeInput(lockTimeRow1Input.value, DEFAULTS.lockTimeRow1);
+  const [hh, mm] = timeStr.split(':').map(Number);
+  const duration = `custom_${String(hh).padStart(2, '0')}${String(mm).padStart(2, '0')}`;
+  try {
+    await saveSettings({ silent: true, overrides: { lockDuration: duration } });
+  } catch (_) {}
   showStepControls(false);
-  runCommand('tradovate-auto-lock:start', '正在定位第 1 步...');
+  runCommand('tradovate-auto-lock:start', `正在定位第 1 步（第一行 ${timeStr}）...`);
 });
 
 nextButton.addEventListener('click', () => {

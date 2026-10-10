@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "TopstepLock",
+  "version": "0.1.0",
+  "description": "One-click lock all Topstep accounts until a specified local time.",
+  "permissions": [
+    "activeTab",
+    "notifications",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://topstepx.com/*",
+    "https://*.topstepx.com/*"
+  ],
+  "action": {
+    "default_title": "TopstepLock",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://topstepx.com/*",
+        "https://*.topstepx.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

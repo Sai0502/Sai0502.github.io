@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Mock Tradovate Lock Modal</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #050607;
+      color: #d7d9df;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .trade-panel {
+      position: fixed;
+      top: 42px;
+      left: 520px;
+      display: flex;
+      gap: 14px;
+      opacity: 0.42;
+    }
+
+    .trade-panel button {
+      width: 320px;
+      height: 76px;
+      border: 0;
+      border-radius: 10px;
+      background: #202833;
+      color: #b4bac4;
+      font-size: 26px;
+    }
+
+    .trade-panel .sell {
+      background: #1f1316;
+      color: #c16a6a;
+    }
+
+    .shade {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+    }
+
+    .modal {
+      position: fixed;
+      left: 74px;
+      top: 52px;
+      width: 850px;
+      min-height: 812px;
+      border-radius: 14px;
+      background: #111419;
+      color: #b9bcc4;
+      padding: 48px 50px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      margin: 0 0 70px;
+      font-size: 32px;
+      color: #d4d6dc;
+    }
+
+    .close {
+      position: absolute;
+      top: 48px;
+      right: 52px;
+      font-size: 46px;
+      color: #5e646e;
+    }
+
+    .lead {
+      font-size: 28px;
+      font-weight: 800;
+      color: #c9ccd3;
+    }
+
+    ul {
+      margin: 34px 0 86px;
+      padding-left: 32px;
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 2.0;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 280px 450px;
+      align-items: start;
+      gap: 22px;
+      margin-bottom: 110px;
+    }
+
+    .label {
+      font-size: 28px;
+      font-weight: 800;
+      color: #aeb3bd;
+      padding-top: 26px;
+    }
+
+    .select {
+      width: 450px;
+      min-height: 80px;
+      border-radius: 6px;
+      background: #444a53;
+      color: #d1d4db;
+      font-size: 29px;
+      font-weight: 800;
+      padding: 8px 24px;
+      box-sizing: border-box;
+    }
+
+    .end-time {
+      margin-top: 14px;
+      font-size: 28px;
+      font-weight: 800;
+      color: #b0b3bc;
+    }
+
+    .actions {
+      display: flex;
+      gap: 16px;
+      margin-left: 330px;
+    }
+
+    .lock-text-layer {
+      position: relative;
+      width: 244px;
+      height: 64px;
+    }
+
+    .lock-bg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 244px;
+      height: 64px;
+      border-radius: 8px;
+      background: linear-gradient(#e49109, #cf7900);
+    }
+
+    .lock-label {
+      position: absolute;
+      left: 0;
+      top: -28px;
+      width: 244px;
+      height: 92px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #17110a;
+      font-size: 28px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .cancel {
+      width: 164px;
+      height: 64px;
+      border: 0;
+      border-radius: 8px;
+      background: #444a53;
+      color: #c2c6ce;
+      font-size: 28px;
+    }
+  </style>
+</head>
+<body>
+  <div class="trade-panel">
+    <button>市价卖出</button>
+    <button class="sell">市价退仓并撤销</button>
+  </div>
+  <div class="shade"></div>
+  <div class="modal">
+    <div class="close">×</div>
+    <h1>锁定所有模拟账户的交易权限</h1>
+    <div class="lead">当您锁定交易时:</div>
+    <ul>
+      <li>所有与您账户关联的模拟账户将被锁定</li>
+      <li>所有未平仓头寸将被立即平仓</li>
+      <li>无法下达新的交易</li>
+      <li>交易仅会在达到设定的时间限制后解锁</li>
+    </ul>
+    <div class="form-row">
+      <div class="label">选择锁定时间</div>
+      <div>
+        <div class="select">交易日结束（中部标准<br>时间下午4点）</div>
+        <div class="end-time">锁定结束时间： 4:00pm（CST）</div>
+      </div>
+    </div>
+    <div class="actions">
+      <div class="lock-text-layer">
+        <div class="lock-bg" data-expected-lock-button></div>
+        <div class="lock-label">锁定交易</div>
+      </div>
+      <button class="cancel">撤销</button>
+    </div>
+  </div>
+</body>
+</html>

@@ -2,7 +2,7 @@ const CACHE_PREFIX = "weekly-news:";
 const CACHE_TTL_MS = 4 * 60 * 60 * 1000;
 const PARTIAL_CACHE_TTL_MS = 15 * 60 * 1000;
 const PARTIAL_EVENT_THRESHOLD = 4;
-const BUILD_LABEL = "ForexFactoryWeekOverlay v2026_0802_235500";
+const BUILD_LABEL = "ForexFactory 金融信息 v1004_1915";
 const DEFAULT_CURRENCIES = new Set(["USD"]);
 const DEFAULT_IMPACTS = new Set(["High", "Medium"]);
 const WEEKDAY_CN = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
@@ -101,7 +101,8 @@ chrome.runtime.onInstalled.addListener(async () => {
   await chrome.storage.local.set({
     ffwo_settings: {
       includeEUR: false,
-      cacheHours: 4
+      cacheHours: 4,
+      useLocalTime: true
     }
   });
 });
@@ -115,7 +116,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     handleGetOverlayData().then(sendResponse).catch((error) => {
       sendResponse({
         ok: false,
-        error: error && error.message ? error.message : String(error)
+        error: error && error.message ? error.message : String(error),
+        diagnostic: (error && error.diagnostic) || null
       });
     });
     return true;
@@ -125,7 +127,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     handleGetOverlayData({ forceRefresh: true }).then(sendResponse).catch((error) => {
       sendResponse({
         ok: false,
-        error: error && error.message ? error.message : String(error)
+        error: error && error.message ? error.message : String(error),
+        diagnostic: (error && error.diagnostic) || null
       });
     });
     return true;
@@ -135,7 +138,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     handleGetOverlayData().then(sendResponse).catch((error) => {
       sendResponse({
         ok: false,
-        error: error && error.message ? error.message : String(error)
+        error: error && error.message ? error.message : String(error),
+        diagnostic: (error && error.diagnostic) || null
       });
     });
     return true;
@@ -145,7 +149,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     handleGetOverlayData({ forceRefresh: true }).then(sendResponse).catch((error) => {
       sendResponse({
         ok: false,
-        error: error && error.message ? error.message : String(error)
+        error: error && error.message ? error.message : String(error),
+        diagnostic: (error && error.diagnostic) || null
       });
     });
     return true;
@@ -167,11 +172,12 @@ async function handleGetOverlayData(options = {}) {
     ? Math.min(cacheTtl, PARTIAL_CACHE_TTL_MS)
     : cacheTtl;
 
-  if (!options.forceRefresh && cached && now - cached.fetchedAt < cachedTtl) {
+  if (!options.forceRefresh && cached && cached.parsed && now - cached.fetchedAt < cachedTtl) {
+    const payload = buildWeeklyPayload(anchor, settings, cached.parsed, cached.debug || {});
     return {
       ok: true,
       source: "cache",
-      payload: applyUiSettings(cached.payload, settings),
+      payload: applyUiSettings(payload, settings),
       debug: Object.assign({}, cached.debug || {}, {
         build: BUILD_LABEL,
         source: "cache",
@@ -182,19 +188,28 @@ async function handleGetOverlayData(options = {}) {
     };
   }
 
-  const payload = await fetchWeeklyPayload(anchor, settings);
-  const debug = Object.assign({}, payload.debug || {}, {
-    partial: isLikelyPartialPayload(payload)
+  const fetched = await fetchWeeklyPayload(anchor, settings);
+  if (fetched && fetched.failed) {
+    return {
+      ok: false,
+      error: fetched.error || "数据获取失败",
+      diagnostic: fetched.debug || null
+    };
+  }
+  const debug = Object.assign({}, fetched.debug || {}, {
+    partial: isLikelyPartialPayload(fetched.debug || {}),
+    eventCount: fetched.parsed ? fetched.parsed.events.length : 0,
+    holidayCount: fetched.parsed ? fetched.parsed.holidays.length : 0
   });
-  payload.debug = debug;
   await chrome.storage.local.set({
     [cacheKey]: {
       fetchedAt: now,
-      payload,
+      parsed: fetched.parsed,
       debug
     }
   });
 
+  const payload = buildWeeklyPayload(anchor, settings, fetched.parsed, debug);
   return {
     ok: true,
     source: "live",
@@ -210,13 +225,23 @@ async function handleGetOverlayData(options = {}) {
   };
 }
 
+// 向 popup 广播获取进度状态（获取完即清空，不持久化）
+async function broadcastFetchStatus(text) {
+  try {
+    await chrome.runtime.sendMessage({ type: "ffwo:progressStatus", text });
+  } catch (_) {
+    // popup 未打开时忽略
+  }
+}
+
 async function getSettings() {
   const stored = await chrome.storage.local.get("ffwo_settings");
   return Object.assign(
     {
       includeEUR: false,
       autoOpen: true,
-      cacheHours: 4
+      cacheHours: 4,
+      useLocalTime: true
     },
     stored.ffwo_settings || {}
   );
@@ -256,67 +281,125 @@ function getWeekSlug(dateLike) {
 }
 
 async function fetchWeeklyPayload(anchorDate, settings) {
+  await broadcastFetchStatus("正在通过 JSON 获取…");
   const jsonPrimary = await fetchJsonPayload(anchorDate, settings).catch((error) => ({
     ok: false,
-    error: error && error.message ? error.message : String(error)
+    error: error && error.message ? error.message : String(error),
+    status: error && error.status ? error.status : 0
   }));
   if (jsonPrimary && jsonPrimary.ok) {
     const parsed = jsonPrimary.parsed;
-    return buildWeeklyPayload(anchorDate, settings, parsed, {
-      primarySource: "json",
-      json: withoutParsed(jsonPrimary),
-      webpageFallback: { ok: false, skipped: "json primary succeeded" }
-    });
+    return {
+      parsed,
+      debug: Object.assign({
+        primarySource: "json",
+        json: withoutParsed(jsonPrimary),
+        webpageFallback: { ok: false, skipped: "json primary succeeded" }
+      })
+    };
   }
 
-  const webpagePayload = await fetchWeeklyPayloadFromWebPage(anchorDate, settings);
-  webpagePayload.debug = Object.assign({}, webpagePayload.debug || {}, {
-    primarySource: "webpage",
-    json: withoutParsed(jsonPrimary)
-  });
-  return webpagePayload;
+  if (jsonPrimary.status === 404) {
+    await broadcastFetchStatus("JSON 返回 404，改用网页获取…");
+  } else {
+    await broadcastFetchStatus("JSON 获取失败，改用网页获取…");
+  }
+
+  await broadcastFetchStatus("正在通过网页获取…");
+  try {
+    const webpageResult = await fetchWeeklyPayloadFromWebPage(anchorDate, settings);
+    return {
+      parsed: webpageResult.parsed,
+      debug: Object.assign({}, webpageResult.debug || {}, {
+        primarySource: "webpage",
+        json: withoutParsed(jsonPrimary)
+      })
+    };
+  } catch (webError) {
+    return {
+      parsed: null,
+      failed: true,
+      error: webError && webError.message ? webError.message : String(webError),
+      debug: {
+        primarySource: "webpage",
+        json: withoutParsed(jsonPrimary),
+        webpageError: webError && webError.message ? webError.message : String(webError),
+        webpageDiag: (webError && webError.webpageDiag) || null
+      }
+    };
+  }
 }
 
 async function fetchWeeklyPayloadFromWebPage(anchorDate, settings) {
   const slug = getWeekSlug(anchorDate);
   const url = `https://www.forexfactory.com/calendar?week=${slug}&ffwo_fetch=1`;
-  const tab = await chrome.tabs.create({
-    url,
-    active: false
-  });
+  const diag = { fetchUrl: url, weekSlug: slug, steps: [] };
+  const tab = await chrome.tabs.create({ url, active: false });
+  diag.tabId = tab.id;
+  diag.steps.push({ at: nowIso(), step: "tab_created", tabId: tab.id });
 
   try {
+    const t0 = Date.now();
     await waitForTabComplete(tab.id, 45000);
-    const readyDebug = await waitForCalendarRowsReady(tab.id, 8000);
-    const [result] = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: scrapeCalendarPage
-    });
+    diag.steps.push({ at: nowIso(), step: "tab_complete", elapsedMs: Date.now() - t0 });
+
+    const t1 = Date.now();
+    const readyDebug = await waitForCalendarRowsReady(tab.id, 15000);
+    diag.ready = readyDebug;
+    diag.steps.push({ at: nowIso(), step: "rows_ready_check", elapsedMs: Date.now() - t1, result: readyDebug });
+
+    const t2 = Date.now();
+    const [result] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: scrapeCalendarPage });
+    diag.steps.push({ at: nowIso(), step: "script_injected", elapsedMs: Date.now() - t2 });
 
     const value = result && result.result;
+    diag.scrapeRaw = value ? {
+      ok: value.ok,
+      error: value.error || null,
+      rowCount: value.rows ? value.rows.length : 0,
+      timezoneOffsetMinutes: value.timezoneOffsetMinutes,
+      debug: value.debug || {}
+    } : null;
+
     if (!value || !value.ok) {
-      throw new Error(value && value.error ? value.error : "Failed to scrape Forex Factory calendar.");
+      const err = new Error(value && value.error ? value.error : "scrapeCalendarPage 返回空结果");
+      err.webpageDiag = diag;
+      throw err;
     }
 
-    const parsed = normalizeWeeklyRows(anchorDate, value.rows, settings);
-    return buildWeeklyPayload(anchorDate, settings, parsed, {
-      primarySource: "webpage",
-      fetchUrl: url,
-      ready: readyDebug,
-      scrape: value.debug || {}
-    });
+    const parsed = normalizeWeeklyRows(anchorDate, value.rows, settings, value.timezoneOffsetMinutes);
+    diag.parsedEventCount = parsed.events.length;
+    diag.parsedHolidayCount = parsed.holidays.length;
+    diag.webpageTimezoneOffsetMinutes = value.timezoneOffsetMinutes;
+    diag.sampleEvents = parsed.events.slice(0, 5).map((e) => ({
+      name: e.name,
+      source: `${e.sourceDateKey} ${e.sourceHhmm}`,
+      local: `${e.localDateKey} ${e.localHhmm}`,
+      currency: e.currency,
+      impact: e.impact
+    }));
+
+    return { parsed, debug: diag };
+  } catch (error) {
+    error.webpageDiag = diag;
+    throw error;
   } finally {
     if (tab && typeof tab.id === "number") {
       try {
         await chrome.tabs.remove(tab.id);
-      } catch (_) {
-      }
+        diag.steps.push({ at: nowIso(), step: "tab_removed", tabId: tab.id });
+      } catch (_) {}
     }
   }
 }
 
+function nowIso() {
+  return new Date().toISOString();
+}
+
 function buildWeeklyPayload(anchorDate, settings, parsed, sourceDebug = {}) {
   const slug = getWeekSlug(anchorDate);
+  const useLocalTime = Boolean(settings.useLocalTime);
   return {
     build: BUILD_LABEL,
     generatedAt: new Date().toISOString(),
@@ -324,10 +407,11 @@ function buildWeeklyPayload(anchorDate, settings, parsed, sourceDebug = {}) {
     requestedWeekRange: formatWeekRange(anchorDate),
     targetMode: isWeekend(new Date()) ? "next-week" : "this-week",
     settings: {
-      includeEUR: Boolean(settings.includeEUR)
+      includeEUR: Boolean(settings.includeEUR),
+      useLocalTime
     },
-    summaryText: formatWeekText(anchorDate, parsed.events, parsed.holidays),
-    days: buildDayCards(anchorDate, parsed.events, parsed.holidays),
+    summaryText: formatWeekText(anchorDate, parsed.events, parsed.holidays, useLocalTime),
+    days: buildDayCards(anchorDate, parsed.events, parsed.holidays, useLocalTime),
     holidays: parsed.holidays,
     debug: Object.assign({
       build: BUILD_LABEL,
@@ -335,8 +419,11 @@ function buildWeeklyPayload(anchorDate, settings, parsed, sourceDebug = {}) {
       requestedWeekRange: formatWeekRange(anchorDate),
       targetMode: isWeekend(new Date()) ? "next-week" : "this-week",
       includeEUR: Boolean(settings.includeEUR),
+      useLocalTime,
       eventCount: parsed.events.length,
-      holidayCount: parsed.holidays.length
+      holidayCount: parsed.holidays.length,
+      env: collectEnvInfo(),
+      anchorDate: anchorDate ? anchorDate.toString() : null
     }, sourceDebug)
   };
 }
@@ -351,34 +438,50 @@ function withoutParsed(value) {
 }
 
 async function fetchJsonPayload(anchorDate, settings) {
-  const jsonUrl = getJsonExportUrl(anchorDate);
-  const response = await fetch(jsonUrl, {
-    cache: "no-store",
-    credentials: "omit"
-  });
-  if (!response.ok) {
-    throw new Error(`Forex Factory JSON export failed: HTTP ${response.status}`);
+  const attempts = [];
+  const primaryUrl = getJsonExportUrl(anchorDate);
+  const fallbackUrl = getJsonExportUrl(anchorDate, true);
+  const candidates = [primaryUrl];
+  if (fallbackUrl !== primaryUrl) candidates.push(fallbackUrl);
+
+  let lastError = null;
+  for (const jsonUrl of candidates) {
+    try {
+      const response = await fetch(jsonUrl, { cache: "no-store", credentials: "omit" });
+      attempts.push({ url: jsonUrl, status: response.status, ok: response.ok });
+      if (!response.ok) {
+        lastError = new Error(`Forex Factory JSON export failed: HTTP ${response.status}`);
+        lastError.status = response.status;
+        continue;
+      }
+      const items = await response.json();
+      if (!Array.isArray(items)) {
+        lastError = new Error("Forex Factory JSON export returned an unexpected payload.");
+        continue;
+      }
+      const parsed = normalizeJsonCalendarItems(anchorDate, items, settings);
+      return {
+        ok: true,
+        source: "nfs.faireconomy.media",
+        url: jsonUrl,
+        attempts,
+        itemCount: items.length,
+        eventCount: parsed.events.length,
+        holidayCount: parsed.holidays.length,
+        parsed
+      };
+    } catch (e) {
+      lastError = e;
+      attempts.push({ url: jsonUrl, error: String((e && e.message) || e) });
+    }
   }
-  const items = await response.json();
-  if (!Array.isArray(items)) {
-    throw new Error("Forex Factory JSON export returned an unexpected payload.");
-  }
-  const parsed = normalizeJsonCalendarItems(anchorDate, items, settings);
-  return {
-    ok: true,
-    source: "nfs.faireconomy.media",
-    url: jsonUrl,
-    itemCount: items.length,
-    eventCount: parsed.events.length,
-    holidayCount: parsed.holidays.length,
-    parsed
-  };
+  throw lastError || new Error("JSON fetch failed");
 }
 
-function getJsonExportUrl(anchorDate) {
+function getJsonExportUrl(anchorDate, forceThisWeek) {
   const targetMonday = getMonday(anchorDate).getTime();
   const currentMonday = getMonday(new Date()).getTime();
-  const period = targetMonday > currentMonday ? "nextweek" : "thisweek";
+  const period = (forceThisWeek || targetMonday <= currentMonday) ? "thisweek" : "nextweek";
   return `https://nfs.faireconomy.media/ff_calendar_${period}.json`;
 }
 
@@ -460,12 +563,12 @@ async function waitForCalendarRowsReady(tabId, timeoutMs = 8000) {
   }, best || { rowCount: 0, dayCount: 0, eventCount: 0, bodyText: "" });
 }
 
-function isLikelyPartialPayload(payload) {
-  const debug = payload && payload.debug ? payload.debug : {};
-  return debug.primarySource === "webpage"
-    && debug.ready
-    && debug.ready.dayCount >= 5
-    && debug.eventCount < PARTIAL_EVENT_THRESHOLD;
+function isLikelyPartialPayload(debug) {
+  const d = debug || {};
+  return d.primarySource === "webpage"
+    && d.ready
+    && d.ready.dayCount >= 5
+    && (d.eventCount || 0) < PARTIAL_EVENT_THRESHOLD;
 }
 
 function scrapeCalendarPage() {
@@ -508,6 +611,7 @@ function scrapeCalendarPage() {
   return {
     ok: true,
     rows,
+    timezoneOffsetMinutes: detectPageTimezoneOffsetMinutes(bodyText, rows),
     debug: {
       rowCount: rows.length,
       dates: Array.from(new Set(rows.map((row) => row.dateText).filter(Boolean))).slice(0, 10),
@@ -516,9 +620,25 @@ function scrapeCalendarPage() {
   };
 }
 
-function normalizeWeeklyRows(anchorDate, rows, settings) {
+// 从页面文本中解析 ForexFactory 当前显示的时区相对 UTC 的偏移（分钟）。
+// 页面通常出现 "(GMT-7:00) Pacific Time" 或 "GMT-04:00 Eastern Time" 之类文本。
+// 解析失败时回退到美东夏令时 (GMT-4)，因为 FF 默认按美东服务器时区展示。
+function detectPageTimezoneOffsetMinutes(bodyText, rows) {
+  const text = String(bodyText || "");
+  const match = text.match(/GMT\s*([+-]?\d{1,2})(?::?(\d{2}))?/i);
+  if (match) {
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2] ? parseInt(match[2], 10) : 0;
+    // GMT-7 表示比 UTC 慢 7 小时，offset = -7*60
+    return hours * 60 + (hours >= 0 ? minutes : -minutes);
+  }
+  return -4 * 60; // 默认美东夏令时
+}
+
+function normalizeWeeklyRows(anchorDate, rows, settings, timezoneOffsetMinutes) {
   const anchor = new Date(anchorDate);
   const currentYear = anchor.getFullYear();
+  const offsetMin = Number.isFinite(timezoneOffsetMinutes) ? timezoneOffsetMinutes : -4 * 60;
   const events = [];
   const holidays = [];
   let currentDay = null;
@@ -576,16 +696,22 @@ function normalizeWeeklyRows(anchorDate, rows, settings) {
       continue;
     }
 
-    const eventDateTime = combineTime(currentDay, currentTime);
+    const wall = combineTime(currentDay, currentTime);
+    // wall 是"网页墙上时间"按浏览器本地时区解析后的 ms；用网页时区偏移换算回真正的 UTC。
+    const utcMs = wall.getTime() - wall.getTimezoneOffset() * 60000 - offsetMin * 60000;
+    const utcDate = new Date(utcMs);
+    const localDate = new Date(utcMs); // 浏览器本地时区（北京）展示
     events.push({
       name: cleanEventName(rawTitle),
       rawTitle,
       currency: currentCurrency,
       impact,
       note: inferNote(rawTitle, impact),
-      datetime: eventDateTime.toISOString(),
-      dateKey: toDateKey(currentDay),
-      hhmm: pad(eventDateTime.getHours()) + ":" + pad(eventDateTime.getMinutes())
+      datetime: utcDate.toISOString(),
+      sourceDateKey: toDateKey(currentDay),
+      sourceHhmm: pad(wall.getHours()) + ":" + pad(wall.getMinutes()),
+      localDateKey: toDateKey(localDate),
+      localHhmm: pad(localDate.getHours()) + ":" + pad(localDate.getMinutes())
     });
   }
 
@@ -702,8 +828,12 @@ function normalizeJsonCalendarItems(anchorDate, items, settings) {
       impact,
       note: inferNote(rawTitle, impact),
       datetime: dt.toISOString(),
-      dateKey: toDateKey(dt),
-      hhmm: pad(dt.getHours()) + ":" + pad(dt.getMinutes())
+      // source：JSON 字符串自带的墙上时间（美东，带 -04:00 偏移）
+      sourceDateKey: String(item.date || item.datetime || "").slice(0, 10),
+      sourceHhmm: String(item.date || item.datetime || "").slice(11, 16),
+      // local：浏览器本地时区（北京）展示
+      localDateKey: toDateKey(dt),
+      localHhmm: pad(dt.getHours()) + ":" + pad(dt.getMinutes())
     });
   }
 
@@ -828,15 +958,21 @@ function eventPriority(name) {
   return NAME_PRIORITY.get(name) || 999;
 }
 
-function buildDayCards(anchorDate, events, holidays) {
+function buildDayCards(anchorDate, events, holidays, useLocalTime) {
   const monday = getMonday(anchorDate);
+  const keyOf = (event) => useLocalTime ? event.localDateKey : event.sourceDateKey;
+  const timeOf = (event) => useLocalTime ? event.localHhmm : event.sourceHhmm;
   const eventsByDay = new Map();
   const holidaysByDay = new Map();
 
   for (const event of events) {
-    const list = eventsByDay.get(event.dateKey) || [];
-    list.push(event);
-    eventsByDay.set(event.dateKey, list);
+    const decorated = Object.assign({}, event, {
+      dateKey: keyOf(event),
+      hhmm: timeOf(event)
+    });
+    const list = eventsByDay.get(decorated.dateKey) || [];
+    list.push(decorated);
+    eventsByDay.set(decorated.dateKey, list);
   }
 
   for (const holiday of holidays) {
@@ -905,8 +1041,8 @@ function compressEventsForDay(events) {
     });
 }
 
-function formatWeekText(anchorDate, events, holidays) {
-  const days = buildDayCards(anchorDate, events, holidays);
+function formatWeekText(anchorDate, events, holidays, useLocalTime) {
+  const days = buildDayCards(anchorDate, events, holidays, useLocalTime);
   const monday = getMonday(anchorDate);
   const sunday = getSunday(anchorDate);
   const weekLabel = `Week ${getIsoWeek(monday)}`;
@@ -1004,4 +1140,19 @@ function getIsoWeek(dateLike) {
 function isWeekend(date) {
   const day = date.getDay();
   return day === 0 || day === 6;
+}
+
+function collectEnvInfo() {
+  try {
+    return {
+      userAgent: navigator.userAgent,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      timezoneOffsetMin: new Date().getTimezoneOffset(),
+      locale: navigator.language,
+      currentTime: new Date().toString(),
+      currentISO: new Date().toISOString()
+    };
+  } catch (e) {
+    return { error: String(e) };
+  }
 }

@@ -154,32 +154,32 @@
    >    
    >    ```
    >    #!/usr/bin/python3
-   >                         
+   >                               
    >    # -*- coding: utf-8 -*-
-   >                         
+   >                               
    >    # encoding=utf8
-   >                         
+   >                               
    >    from aip import AipOcr
    >    import sys,io
    >    sys.stdout=io.TextIOWrapper(sys.stdout.buffer,encoding='utf8')
-   >                         
+   >                               
    >    """ 你的 APPID AK SK """
    >    APP_ID = '34338402'
    >    API_KEY = 'GVeTGTZdRIiH3AphNQtumCk4'
    >    SECRET_KEY = 'csTzqbvYHbj8XGMnIgCAOtN7Gq1Ra58H'
-   >                         
+   >                               
    >    client = AipOcr(APP_ID, API_KEY, SECRET_KEY)
-   >                         
+   >                               
    >    def get_file_content(file):
    >     with open(file, 'rb') as fp:
    >         return fp.read()
-   >                         
+   >                               
    >    def img_to_str(image_path):
    >     image = get_file_content(image_path)
    >     result = client.basicGeneral(image)
    >     if 'words_result' in result:
    >         return u'\n'.join([w['words'] for w in result['words_result']])
-   >                         
+   >                               
    >    print(img_to_str(image_path='/Users/jiangsai/Downloads/1.png'))
    >    ```
    
@@ -243,4 +243,16 @@
   > 交易模式 + 2	右切桌面 
 
   ![image-20260606161905064](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20260606161905064.png)
+
+* Tradovate 快捷键
+
+  1. 模拟点击
+
+     ![image-20261008212618479](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202610082126668.png)
+
+  2. 修改快捷键映射
+
+     ![Axure RP 9 2026-10-09 21.09.13](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202610092112328.png)
+
+
 

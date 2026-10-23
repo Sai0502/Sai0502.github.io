@@ -1,6 +1,6 @@
 (function () {
 const SCRIPT_VERSION = '2026-09-23-unified-custom-time-v33';
-const SCRIPT_BUILD_LABEL = 'TradingAutoLock-TDV v1009_2103';
+const SCRIPT_BUILD_LABEL = 'TradingAutoLock-TDV v1014_1220';
 if (window.__tradovateAutoLockLoaded === SCRIPT_VERSION) return;
 window.__tradovateAutoLockLoaded = SCRIPT_VERSION;
 
@@ -4095,6 +4095,86 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   } catch (_) {}
 })();
+
+// ---- 白天交易提醒弹窗（当地时间 6:00-21:00，每次打开页面弹出）----
+const DAYTIME_OVERLAY_ID = 'trading-autolock-daytime-overlay';
+let daytimeReminderClosedByUser = false;
+function showDaytimeReminder(force) {
+  const h = new Date().getHours();
+  if (h < 6 || h >= 21) return; // 仅本地时间 6:00-20:59 触发
+  if (daytimeReminderClosedByUser && !force) return;
+  if (document.getElementById(DAYTIME_OVERLAY_ID)) return;
+  const overlay = document.createElement('div');
+  overlay.id = DAYTIME_OVERLAY_ID;
+  overlay.innerHTML = [
+    '<div class="daytime-reminder-card" role="dialog" aria-live="assertive">',
+    '  <button class="daytime-reminder-close" type="button" aria-label="关闭">×</button>',
+    '  <div class="daytime-reminder-title">白天不要做单</div>',
+    '  <div class="daytime-reminder-line"></div>',
+    '  <div class="daytime-reminder-body">',
+    '    <div class="daytime-reminder-row"><span class="daytime-reminder-key">白天忍不住的根因：</span><span class="daytime-reminder-val">昨天亏了</span></div>',
+    '    <div class="daytime-reminder-row"><span class="daytime-reminder-key">白天不能做的根因：</span><span class="daytime-reminder-val">数据统计显示，白天做单刹不住车，80% 都是亏的</span></div>',
+    '    <div class="daytime-reminder-row"><span class="daytime-reminder-key">明知会亏还要做的根因：</span><span class="daytime-reminder-val">情绪，马上回本的焦虑情绪</span></div>',
+    '  </div>',
+    '</div>'
+  ].join('');
+  overlay.style.cssText = [
+    'position: fixed; inset: 0; z-index: 2147483646; display: grid; place-items: center;',
+    'padding: 5vh 4vw; background: rgba(0, 0, 0, 0.72);',
+    'color: #eef3f8; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;'
+  ].join(' ');
+  const style = document.createElement('style');
+  style.textContent = `
+    #${DAYTIME_OVERLAY_ID} .daytime-reminder-card {
+      box-sizing: border-box; position: relative;
+      width: min(92vw, 1320px);
+      display: grid; align-content: center; gap: clamp(27px, 3.9vh, 48px);
+      padding: clamp(42px, 7.5vw, 84px);
+      border: 1px solid rgba(125, 151, 184, 0.55);
+      border-radius: 27px; background: #101821;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+      text-align: center;
+    }
+    #${DAYTIME_OVERLAY_ID} .daytime-reminder-title {
+      color: #ff4d57; font-size: clamp(39px, 5.25vw, 66px);
+      line-height: 1.15; font-weight: 900;
+    }
+    #${DAYTIME_OVERLAY_ID} .daytime-reminder-line { height: 1px; background: rgba(126, 151, 183, 0.65); }
+    #${DAYTIME_OVERLAY_ID} .daytime-reminder-body {
+      display: flex; flex-direction: column; gap: clamp(15px, 2.4vh, 24px);
+      text-align: left;
+    }
+    #${DAYTIME_OVERLAY_ID} .daytime-reminder-row {
+      font-size: clamp(23px, 2.9vw, 32px); line-height: 1.55; color: #d6dde8;
+    }
+    #${DAYTIME_OVERLAY_ID} .daytime-reminder-key { color: #f0b429; font-weight: 700; }
+    #${DAYTIME_OVERLAY_ID} .daytime-reminder-close {
+      position: absolute; top: 24px; right: 27px; width: 57px; height: 57px;
+      border: 1px solid rgba(150, 167, 188, 0.45); border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04); color: #b8c2d0;
+      cursor: pointer; font-size: 36px; line-height: 1;
+    }
+    #${DAYTIME_OVERLAY_ID} .daytime-reminder-close:hover { color: #ffffff; border-color: rgba(255, 255, 255, 0.72); }
+  `;
+  overlay.appendChild(style);
+  document.documentElement.appendChild(overlay);
+  overlay.querySelector('.daytime-reminder-close')?.addEventListener('click', () => { daytimeReminderClosedByUser = true; overlay.remove(); });
+}
+function armDaytimeReminder() {
+  const run = () => {
+    showDaytimeReminder();
+    // SPA 跳转可能清掉弹窗 DOM：1.2s 后若弹窗丢失且用户未关闭，补弹一次
+    setTimeout(() => {
+      if (!document.getElementById(DAYTIME_OVERLAY_ID)) showDaytimeReminder(true);
+    }, 1200);
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run, { once: true });
+  } else {
+    run();
+  }
+}
+armDaytimeReminder();
 
 restoreLockoutOverlay().catch(err => {
   if (!isExtensionContextInvalidated(err)) console.warn('[TradovateAutoLock] failed to restore lockout overlay:', err);

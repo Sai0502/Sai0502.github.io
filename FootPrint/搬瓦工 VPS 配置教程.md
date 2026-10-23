@@ -190,7 +190,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/alireza0/s-ui/master/install.s
   - 名称：`ShadowRocket-ClashVerge`
   - 入站标签：选 `vless-20727`
   - 保存
-  - 点二维码图标 → 切到链接Tab → 单击即可复制链接 `vless://xxxx-xxx-xxx` 
+  - 点二维码图标 → 切到Tab「链接」 → 单击即可复制链接 `vless://xxxx-xxx-xxx` 
   
 - 配置 IOS - ShadowRocket
   - 用户管理 → 点二维码图标 → 切到链接Tab → ShadowRocket扫描，即可获取订阅地址
@@ -212,7 +212,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/alireza0/s-ui/master/install.s
     
   - 选择节点
     1. 左侧 → `代理`（Proxies）
-    2. 节点选择：选 `vless-28641`
+    2. 节点选择：选 `vless-20727`
     
   - 开启代理
     

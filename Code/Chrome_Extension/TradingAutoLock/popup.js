@@ -89,7 +89,7 @@ let scheduledLoadTimer = null;
 let scheduledRuntimeRefreshTimer = null;
 let lastDiagnosticBundle = null;
 let lastDiagnosticMarkdown = '';
-const POPUP_BUILD_LABEL = 'Trading Auto Lock v1009_2103';
+const POPUP_BUILD_LABEL = 'Trading Auto Lock v1014_1220';
 
 function applyPopupViewportHeight() {
   // Let Chrome size the extension popup naturally. If content exceeds Chrome's

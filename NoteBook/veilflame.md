@@ -1920,6 +1920,14 @@
          | 上影线里   | 收在低位，远离 POC | 与上反之                                                     |
          | 接近收盘价 | 靠近 POC           | 多空力量均衡，短期偏震荡                                     |
 
+   4. 足迹图价格颗粒度
+
+      ![image-20261015172036524](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202610151720677.png)
+
+   5. 足迹图成交量&Delta 指标
+
+      
+
 1. DOM（Depth of Market 市场深度）
 
    1. 作用：展示当前价格上下方，挂着多少“等待成交”的限价买单和限价卖单。

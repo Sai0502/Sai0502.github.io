@@ -602,3 +602,12 @@ button.ts {
   border-radius: 8px;
   z-index: 5;
 }
+.hotkey-input[id^="hotkeyFrom"] {
+  flex: 0 0 170px;   /* 原快捷键：固定宽度，改这个数字就行 */
+  width: 150px;
+}
+.hotkey-input[id^="hotkeyTo"] {
+  flex: 1;           /* 目标快捷键：自动占满剩余 */
+}
+
+

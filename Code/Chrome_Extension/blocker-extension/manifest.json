@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Temptation Blocker",
+  "version": "1.0.0",
+  "description": "访问指定网站时，跳转到一句冷静的提醒。",
+  "permissions": ["declarativeNetRequestWithHostAccess"],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "block_rules",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["index.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

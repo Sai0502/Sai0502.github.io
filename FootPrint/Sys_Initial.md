@@ -56,9 +56,9 @@ VPN开启后Chrome可翻墙，终端不行
 >    ```bash
 >    # 创建 .zshrc 文件
 >    echo >> ~/.zshrc
->                                                                                                                
+>                                                                                                                   
 >    open ~/.zshrc
->                                                                                                                
+>                                                                                                                   
 >    # 在文件最后添加下面两句
 >    export http_proxy="http://127.0.0.1:8234" export https_proxy="http://127.0.0.1:8234"
 >    ```
@@ -224,14 +224,14 @@ VPN开启后Chrome可翻墙，终端不行
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->                                                 
+>                                                     
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->                                                 
+>                                                     
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 >
@@ -819,13 +819,20 @@ VPN开启后Chrome可翻墙，终端不行
 
 ##### 屏蔽更新
 
-* 查看当前 host
+* Visual Studio Code：`Command + Shift + P` 打开命令面板
 
   ```bash
-  open /etc/hosts
+  # 只需安装一次，之后不用管
+  Shell Command: Install 'code' command in PATH
   ```
 
-* host 完整内容
+* 打开终端
+
+  ```bash
+  sudo code /etc/hosts
+  ```
+
+* 在VS Code  中修改并保存（保存时弹窗询问是否允许覆盖，点击允许并输入密码即可）
 
   ```bash
   # 系统默认配置，请勿修改

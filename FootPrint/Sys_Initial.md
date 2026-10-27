@@ -56,9 +56,9 @@ VPN开启后Chrome可翻墙，终端不行
 >    ```bash
 >    # 创建 .zshrc 文件
 >    echo >> ~/.zshrc
->                                                                                                                   
+>                                                                                                                      
 >    open ~/.zshrc
->                                                                                                                   
+>                                                                                                                      
 >    # 在文件最后添加下面两句
 >    export http_proxy="http://127.0.0.1:8234" export https_proxy="http://127.0.0.1:8234"
 >    ```
@@ -67,24 +67,33 @@ VPN开启后Chrome可翻墙，终端不行
 
 > 安装后别打开APP，立刻去'/Library/Application Support/Google/GoogleUpdater'，把GoogleUpdater文件夹删除，随意新建个文件改名为GoogleUpdater，挪到改目录，即可
 
-##### 安装brew
+##### 安装 brew
 
 > ```bash
-> # 境外源
+> # 1. 安装
+> #       境外源
 > /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+> #       清华源：国内可能用境外源会超时
+> /bin/bash -c "$(curl -fsSL https://mirrors.tuna.tsinghua.edu.cn/git/homebrew/install.sh)"
 > 
-> # 获取 brew 安装位置
-> which brew
-> # 输出 /usr/local/bin/brew
+> # 2. 确认安装位置
+> which brew    # 输出 /opt/homebrew/bin/brew
 > 
-> # 创建 .zprofile文件
+> # 创建 .zprofile文件，应该用不到
 > echo >> ~/.zprofile
 > 
-> # 添加到 PATH 环境变量，否则终端无法识别 brew 命令
-> # /usr/local/bin/brew 要改成 which brew 输出的位置
-> echo 'eval "$(/usr/local/bin/brew shellenv)"' >> ~/.zprofile
+> # 3. 添加到 PATH 环境变量，否则终端无法识别 brew 命令（用 which brew 的真实输出）
+> echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
 > 
+> # 4. 立即重新加载并执行 ~/.zprofile 里的配置，使修改马上生效
 > source ~/.zprofile
+> 
+> # 5. 禁止自动更新（追加到 ~/.zshrc 末尾）
+> echo 'export HOMEBREW_NO_AUTO_UPDATE=1' >> ~/.zshrc    # 禁止在执行 brew install 安装 app 时自动 brew update
+> echo 'export HOMEBREW_NO_INSTALL_UPGRADE=1' >> ~/.zshrc    # 安装某个包时，如果它已经安装过但版本旧了，不要自动把它升级到最新版
+> 
+> # 立即重新加载并执行 ~/.zshrc 里的配置，使修改马上生效
+> source ~/.zshrc
 > ```
 
 ##### 安装iterm2
@@ -224,14 +233,14 @@ VPN开启后Chrome可翻墙，终端不行
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->                                                     
+>                                                         
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->                                                     
+>                                                         
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 >

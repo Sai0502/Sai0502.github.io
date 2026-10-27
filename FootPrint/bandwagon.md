@@ -340,8 +340,8 @@ ufw allow 2095/tcp
       # SSH 登录
       ssh root@199.19.110.23
       # 确认是否端口被封
-      root@core-pipes-1: ss -tlnp | grep 20727     # 没反馈
-      root@core-pipes-1: ss -tlnp | grep 44566     # 有反馈，说明 44566 端口 ok
+      ss -tlnp | grep 20727     # 没反馈
+      ss -tlnp | grep 44566     # 有反馈，说明 44566 端口 ok
       LISTEN 0      4096               *:44566            *:*    users:(("sui",pid=623188,fd=14))
       ```
 

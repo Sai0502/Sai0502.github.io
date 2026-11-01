@@ -353,3 +353,49 @@ ufw allow 2095/tcp
       4. 让端口生效：面板里重启 s-ui，或 SSH 执行 `s-ui restart`
       5. **用户管理** → 找到你的用户 → 复制新的 `vless://` 链接 → 去 [订阅转换工具](https://kjfx.github.io/socks/clash.html) 处理
       6. **Clash Verge**：删除旧订阅 → 拖入新订阅
+
+
+
+
+
+## 虚拟U卡
+
+|         | SafePal Mastercard                                           | Bybit Card                               |
+| ------- | ------------------------------------------------------------ | ---------------------------------------- |
+| 性质    | SafePal 是加密钱包，不是银行或卡组织                         | Bybit 是加密货币交易所，本身不是卡组织   |
+| 卡类型  | 万事达借记卡（与 Fiat24 合作）                               | 万事达借记卡（与 Mastercard 合作）       |
+| 入金    | 充 USDC，手动换成 USD，手动存卡里                            | 充 USDC / USDT，自动换成 USD，自动存卡里 |
+| 用途    | 可在全球 Mastercard 商户消费，也可绑定支付宝、微信、Apple Pay 等 | 同 SafePal                               |
+| 安全    | 钱在本地钱包，私钥至关重要                                   | 钱在平台                                 |
+| AppleID | 美区Gmail                                                    | 美区Gmail                                |
+
+#### Bybit 用法
+
+1. VPN：台湾、日本
+
+2. [入金](https://www.youtube.com/watch?v=1xd2U8_RhWs)
+
+   ![image-20261029165638271](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202610291656323.png)
+
+3. 用法
+
+   ![image-20261029171300595](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202610291713680.png)
+
+4. 绑定支付宝
+
+### SafePal 用法
+
+1. 查看私钥、助记词
+
+   ![image-20261030112557342](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202610301125422.png)
+
+2. [入金](https://www.youtube.com/watch?v=fjRuY8ucYvo&t=75s)
+
+   ![image-20261030153920316](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202610301539370.png)
+
+3. 用法
+
+   ![image-20261030153802690](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202610301538768.png)
+
+4. 必备：在 Arbitrum 链上留 15 美金的 ETH，因入金、划转、消费都要消耗 ETH 作 Gas 费
+

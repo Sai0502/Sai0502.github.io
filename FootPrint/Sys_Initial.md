@@ -56,9 +56,9 @@ VPN开启后Chrome可翻墙，终端不行
 >    ```bash
 >    # 创建 .zshrc 文件
 >    echo >> ~/.zshrc
->                                                                                                                         
+>                                                                                                                               
 >    open ~/.zshrc
->                                                                                                                         
+>                                                                                                                               
 >    # 在文件最后添加下面两句
 >    export http_proxy="http://127.0.0.1:8234" export https_proxy="http://127.0.0.1:8234"
 >    ```
@@ -106,7 +106,7 @@ VPN开启后Chrome可翻墙，终端不行
 >    echo 'export HOMEBREW_NO_AUTO_UPDATE=1' >> ~/.zshrc
 >    # 安装某个包时，如果它已经安装过但版本旧了，不要自动把它升级到最新版
 >    echo 'export HOMEBREW_NO_INSTALL_UPGRADE=1' >> ~/.zshrc
->       
+>             
 >    # 立即重新加载并执行 ~/.zshrc 里的配置，使修改马上生效
 >    source ~/.zshrc
 >    ```
@@ -248,14 +248,14 @@ VPN开启后Chrome可翻墙，终端不行
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->                                                             
+>                                                                     
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->                                                             
+>                                                                     
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 >
@@ -348,7 +348,7 @@ VPN开启后Chrome可翻墙，终端不行
 >   sudo chmod +x /usr/local/bin/ffmpeg
 >   sudo xattr -dr com.apple.quarantine /usr/local/bin/ffmpeg
 >   ffmpeg -version
->   
+>
 >   # 下面是在 conda 的 py3.10 环境里安装
 >   conda activate py3.10
 >   conda install ffmpeg -c conda-forge
@@ -377,38 +377,47 @@ VPN开启后Chrome可翻墙，终端不行
 >
 > > 直接下载往往被限制分辨率，增加参数可模拟浏览器
 >
-> * 查看视频所有类型
+> **用法**
 >
->   `yt-dlp -F --cookies-from-browser chrome URL`
+> ```bash
+> # 直接下载最高品质视频
+> yt-dlp --cookies-from-browser chrome URL
+> 
+> # 查看有哪些字幕（有些字幕需要登录账号才能下载，因此最好用 cookies）
+> yt-dlp --cookies-from-browser chrome --list-subs URL
+>       Language Formats
+>       danmaku  xml    # 弹幕
+>       zh       srt    # 字幕
+> 
+> # 下载字幕
+> yt-dlp --cookies-from-browser chrome --write-sub --sub-lang zh --sub-format srt URL
+> 
+> # 下载视频和所有字幕
+> yt-dlp --cookies-from-browser chrome --write-sub --all-subs URL
+> 
+> # 下载指定ID的视频
+> yt-dlp -f ID --cookies-from-browser chrome URL
+> 
+> # 下载列表
+> yt-dlp --yes-playlist --cookies-from-browser chrome URL
+> ```
 >
-> * 直接下载最高品质视频
+> ![img](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202308271236418.png)
 >
->   `yt-dlp --cookies-from-browser chrome URL`
->
-> * 下载指定ID的视频
->
->   `yt-dlp -f ID --cookies-from-browser chrome URL`
->
-> * 下载列表
->
->   `yt-dlp --yes-playlist --cookies-from-browser chrome URL`
->
-> * 音频、视频分别下载
->
->   > 视频不包含音频
->   >
->   > `yt-dlp -f 242 --cookies-from-browser chrome URL`
->   >
->   > 音频不包含视频
->   >
->   > `yt-dlp -f 230 --cookies-from-browser chrome URL`
->   >
->   > 视频 + 音频
->   >
->   > * 默认mkv：`yt-dlp -f 242+ 230 --cookies-from-browser chrome URL`
->   > * 转mp4：`yt-dlp -f 230 --cookies-from-browser chrome --remux-video mp4 URL`
->   >
->   > ![img](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202308271236418.png)
+> ```bash
+> # 查看视频所有类型
+> yt-dlp -F --cookies-from-browser chrome URL
+> 
+> # 下载视频（不包含音频）
+> yt-dlp -f 242 --cookies-from-browser chrome URL
+> 
+> # 下载音频（不包含视频）
+> yt-dlp -f 230 --cookies-from-browser chrome URL
+> 
+> # 下载视频 + 音频
+> yt-dlp -f 242+ 230 --cookies-from-browser chrome URL    # 默认mkv
+> yt-dlp -f 230 --cookies-from-browser chrome --remux-video mp4 URL    # 转mp4
+> ```
 
 ##### ffmpeg
 

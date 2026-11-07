@@ -1975,6 +1975,10 @@
 
       * Ninja上每次增加品种，都要重启Atas，才能交易
 
+1. Atas 连接 Lucid TradeSea
+
+   ![longshot20261107025409](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202611070255425.png)
+
 #  北极星账号打造
 
 1. Mac上构造 9:16 的环境

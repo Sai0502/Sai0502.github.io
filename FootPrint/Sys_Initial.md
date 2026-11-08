@@ -56,9 +56,9 @@ VPN开启后Chrome可翻墙，终端不行
 >    ```bash
 >    # 创建 .zshrc 文件
 >    echo >> ~/.zshrc
->                                                                                                                               
+>                                                                                                                                  
 >    open ~/.zshrc
->                                                                                                                               
+>                                                                                                                                  
 >    # 在文件最后添加下面两句
 >    export http_proxy="http://127.0.0.1:8234" export https_proxy="http://127.0.0.1:8234"
 >    ```
@@ -106,7 +106,7 @@ VPN开启后Chrome可翻墙，终端不行
 >    echo 'export HOMEBREW_NO_AUTO_UPDATE=1' >> ~/.zshrc
 >    # 安装某个包时，如果它已经安装过但版本旧了，不要自动把它升级到最新版
 >    echo 'export HOMEBREW_NO_INSTALL_UPGRADE=1' >> ~/.zshrc
->             
+>                
 >    # 立即重新加载并执行 ~/.zshrc 里的配置，使修改马上生效
 >    source ~/.zshrc
 >    ```
@@ -248,14 +248,14 @@ VPN开启后Chrome可翻墙，终端不行
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->                                                                     
+>                                                                         
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->                                                                     
+>                                                                         
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 >
@@ -925,6 +925,29 @@ VPN开启后Chrome可翻墙，终端不行
 
   ```bash
   sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder
+  ```
+  
+* 禁止更新
+
+  ```bash
+  sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate AutomaticCheckEnabled -bool false
+  sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate AutomaticDownload -bool false
+  sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate AutomaticallyInstallMacOSUpdates -bool false
+  defaults delete com.apple.SoftwareUpdate AvailableUpdatesNotificationCountKey 2>/dev/null
+  defaults delete com.apple.SoftwareUpdate AvailableUpdatesNotificationProductKey 2>/dev/null
+  defaults delete com.apple.SoftwareUpdate UserNotificationDate 2>/dev/null
+  killall SoftwareUpdateNotificationManager 2>/dev/null
+  ```
+
+* 验证是否生效
+
+  ```bash
+  # 输出 0 = 成功
+  defaults read /Library/Preferences/com.apple.SoftwareUpdate AutomaticCheckEnabled
+  # 无输出 = 推送进程已退出
+  pgrep -fl SoftwareUpdateNotificationManager
+  
+  # 万一弹窗还在屏幕上，点一次「稍后提醒我」关掉即可，之后不会再出现（提醒已被清空）。
   ```
 
 ##### iPhone 桌面展示多张照片

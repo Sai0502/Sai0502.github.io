@@ -56,9 +56,9 @@ VPN开启后Chrome可翻墙，终端不行
 >    ```bash
 >    # 创建 .zshrc 文件
 >    echo >> ~/.zshrc
->                                                                                                                                  
+>                                                                                                                                     
 >    open ~/.zshrc
->                                                                                                                                  
+>                                                                                                                                     
 >    # 在文件最后添加下面两句
 >    export http_proxy="http://127.0.0.1:8234" export https_proxy="http://127.0.0.1:8234"
 >    ```
@@ -106,7 +106,7 @@ VPN开启后Chrome可翻墙，终端不行
 >    echo 'export HOMEBREW_NO_AUTO_UPDATE=1' >> ~/.zshrc
 >    # 安装某个包时，如果它已经安装过但版本旧了，不要自动把它升级到最新版
 >    echo 'export HOMEBREW_NO_INSTALL_UPGRADE=1' >> ~/.zshrc
->                
+>                   
 >    # 立即重新加载并执行 ~/.zshrc 里的配置，使修改马上生效
 >    source ~/.zshrc
 >    ```
@@ -248,14 +248,14 @@ VPN开启后Chrome可翻墙，终端不行
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->                                                                         
+>                                                                             
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->                                                                         
+>                                                                             
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 >
@@ -584,39 +584,176 @@ VPN开启后Chrome可翻墙，终端不行
 >
 >        ![image-20260804131712970](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202608041317038.png)
 
-##### GitHub + PicGo + Typora搭建图床
+##### Typora + GitHub搭建图床
 
-> 1. 创建GitHub图床
+> 1. 创建 GitHub 图床
 >
 >    > 创建的token只展示一次，要好好保存
 >
 >    ![image-20241223100207621](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20241223100207621.png)
 >
-> 2. 配置PicGo
+> 2. PicGo 做上传中转
 >
->    > * 设定仓库名的时候，是按照“账户名/仓库名”的格式填写
+>    > 1. PicGo 设置
 >    >
->    >   * 如 jiangsai0502/PicBedRepo
+>    >    * 设定仓库名的时候，是按照“账户名/仓库名”的格式填写
 >    >
->    > * 分支名统一填写“master”
+>    >      * 如 jiangsai0502/PicBedRepo
 >    >
->    > * 将之前的Token黏贴在这里：`74d803fcee14a9c36a8f1f387e5085446c2489f1`
+>    >    * 分支名统一填写“master”
 >    >
->    > * 存储路径可以写成img/，这样会在repository下创建一个“img”文件夹
+>    >    * 将之前的Token黏贴在这里：`74d803fcee14a9c36a8f1f387e5085446c2489f1`
 >    >
->    > * 自定义域名的作用是，在上传图片后成功后，PicGo会将“自定义域名+上传的图片名”生成的访问链接，放到剪切板上https://raw.githubusercontent.com/账户名/仓库名/分支名，自定义域名需要按照这样去填写
+>    >    * 存储路径可以写成img/，这样会在repository下创建一个“img”文件夹
 >    >
->    >   * 如https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master
+>    >    * 自定义域名的作用是，在上传图片后成功后，PicGo会将“自定义域名+上传的图片名”生成的访问链接，放到剪切板上https://raw.githubusercontent.com/账户名/仓库名/分支名，自定义域名需要按照这样去填写
 >    >
->    > * PicGo报错
+>    >      * 如https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master
 >    >
->    >   ![image-20241107173202457](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20241107173202457.png)
+>    >    * PicGo报错
+>    >
+>    >      ![image-20241107173202457](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/image-20241107173202457.png)
+>    >
+>    > 2. Typora 设置（Typora 的语言必须调成中文，上传服务才能看到PicGo.app）
+>    >
+>    >    ![image-20240504172744911](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202405041727992.png)
 >
-> 3. Typora自动上传
+> 3. Typora 自己上传
 >
->    > Typora到语言必须调成中文，上传服务才能看到PicGo.app
+>    > 1. 写配置文件
+>    >
+>    >    ```bash
+>    >    mkdir -p ~/bin
+>    >    cat > ~/.github-picbed.json <<'EOF'
+>    >    {
+>    >      "repo": "用户名/PicBedRepo",    # 固定的
+>    >      "branch": "main",    # 固定的
+>    >      "path": "img/",    # 固定的
+>    >      "customUrl": "",    # 固定的
+>    >      "token": "github_pat_在这里粘贴你的token"    # 每次生成只展示一次
+>    >    }
+>    >    EOF
+>    >    chmod 600 ~/.github-picbed.json
+>    >    ```
+>    >
+>    > 2. 安装上传脚本
+>    >
+>    >    ```bash
+>    >    cat > ~/bin/github-picbed <<'SCRIPT'
+>    >    #!/bin/bash
+>    >    # github-picbed — upload local images to a GitHub repo and print their public URLs.
+>    >    # Usage: github-picbed <image> [image ...]
+>    >    # stdout: one URL per line (nothing else, so Typora can read it directly).
+>    >    # stderr: diagnostics.
+>    >    #
+>    >    # Config: ~/.github-picbed.json
+>    >    #   {"repo":"owner/name","branch":"master","path":"img/","customUrl":"","token":"ghp_..."}
+>    >    
+>    >    set -uo pipefail
+>    >    
+>    >    CONFIG="$HOME/.github-picbed.json"
+>    >    [ -f "$CONFIG" ] || { echo "missing config: $CONFIG" >&2; exit 1; }
+>    >    
+>    >    field() { /usr/bin/python3 -c "import json,sys;print(json.load(open(sys.argv[1]))[sys.argv[2]])" "$CONFIG" "$1" 2>/dev/null; }
+>    >    
+>    >    REPO="$(field repo)"
+>    >    BRANCH="$(field branch)"
+>    >    DIR="$(field path)"
+>    >    CUSTOM="$(field customUrl)"
+>    >    TOKEN="$(field token)"
+>    >    
+>    >    [ -n "$REPO" ] && [ -n "$TOKEN" ] || { echo "config incomplete: repo/token required" >&2; exit 1; }
+>    >    BRANCH="${BRANCH:-master}"
+>    >    [ -n "$DIR" ] || DIR="img/"
+>    >    case "$DIR" in */) ;; *) DIR="$DIR/" ;; esac
+>    >    
+>    >    urlencode() {
+>    >      /usr/bin/python3 -c "import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1]))" "$1"
+>    >    }
+>    >    
+>    >    upload_one() {
+>    >      local file="$1"
+>    >      [ -f "$file" ] || { echo "not a file: $file" >&2; return 1; }
+>    >    
+>    >      local ext="${file##*.}"
+>    >      local base
+>    >      base="$(basename "$file")"
+>    >      base="${base%.*}"
+>    >      # Keep names readable (CJK included); only neutralise characters that break paths.
+>    >      base="$(/usr/bin/python3 -c 'import re,sys
+>    >    s=sys.argv[1].replace(" ","-")
+>    >    s=re.sub(r"[\x00-\x1f/\\:]","-",s)
+>    >    s=s.strip("-")
+>    >    print(s)' "$base")"
+>    >      # timestamp prefix keeps names unique without a conflict check
+>    >      local name
+>    >      name="$(date +%Y%m%d%H%M%S)-${base}.${ext}"
+>    >      local remote="${DIR}${name}"
+>    >    
+>    >      local content
+>    >      content="$(base64 -i "$file" | tr -d '\n')"
+>    >    
+>    >      local body
+>    >      body="$(/usr/bin/python3 -c '
+>    >    import json,sys
+>    >    print(json.dumps({"message":"upload "+sys.argv[1],"branch":sys.argv[2],"content":sys.argv[3]}))
+>    >    ' "$name" "$BRANCH" "$content")"
+>    >    
+>    >      local code
+>    >      code="$(curl -sS -o /tmp/github-picbed.resp -w '%{http_code}' \
+>    >        -X PUT "https://api.github.com/repos/${REPO}/contents/$(urlencode "$remote")" \
+>    >        -H "Authorization: Bearer ${TOKEN}" \
+>    >        -H "Accept: application/vnd.github+json" \
+>    >        -H "X-GitHub-Api-Version: 2022-11-28" \
+>    >        -H "Content-Type: application/json" \
+>    >        -d "$body")"
+>    >    
+>    >      if [ "$code" != "201" ]; then
+>    >        echo "upload failed ($code) for $file" >&2
+>    >        head -c 400 /tmp/github-picbed.resp >&2; echo >&2
+>    >        return 1
+>    >      fi
+>    >    
+>    >      local url
+>    >      if [ -n "$CUSTOM" ]; then
+>    >        url="${CUSTOM%/}/$(urlencode "$remote")"
+>    >      else
+>    >        url="https://raw.githubusercontent.com/${REPO}/${BRANCH}/$(urlencode "$remote")"
+>    >      fi
+>    >      echo "$url"
+>    >    }
+>    >    
+>    >    status=0
+>    >    for f in "$@"; do
+>    >      upload_one "$f" || status=1
+>    >    done
+>    >    exit $status
+>    >    SCRIPT
+>    >    
+>    >    chmod +x ~/bin/github-picbed
+>    >    ```
+>    >
+>    > 3. 先在命令行验一次（不要跳过）
+>    >
+>    >    ```bash
+>    >    ~/bin/github-picbed ~/Desktop/test.png    # 随便找一张图 ~/Desktop/test.png
+>    >    ```
+>    >
+>    >    预期：**只输出一行** `https://raw.githubusercontent.com/用户名/PicBedRepo/main/img/时间戳-test.png`
+>    >
+>    > 4. 配置 Typora
+>    >
+>    >    1. Typora → 偏好设置 → 图像
+>    >    2. 插入图片时：选 **「上传图片」**（这是"粘贴即上传"的开关）
+>    >    3. 上传服务设定：
+>    >       1. 上传服务：自定义命令
+>    >       2. 命令：填绝对路径`/Users/你的用户名/bin/github-picbed`
+>    >    4. 点 「验证图片上传选项」，等几秒，出现 **「成功上传图片并获得新的 URL」** 并列出 `https://raw...` 即通过。
+>    >    5. 关键一步：完全退出 Typora（`⌘Q`），再重新打开
+>    >
+>    >    ![image-20261109112421420](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/20261109112421-image-20261109112421420.png)
 >
->    ![image-20240504172744911](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/202405041727992.png)
+>    
 
 1. Typora设置
 

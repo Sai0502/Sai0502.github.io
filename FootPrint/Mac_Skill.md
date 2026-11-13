@@ -338,7 +338,7 @@ opencode --version
 
 # 进入 OpenCode 并连接官方内置的免费云端模型 Big Pickle（必须联网）
 opencode
-# 切换模型
+# 切换模型，搜索 DeepSeek V4.1 Flash Free 免费模型
 /models
 # 退出 OpenCode 界面
 /exit
@@ -392,24 +392,224 @@ opencode
    }
    ```
 
-2. 
+2. 安装插件和 Skills：进入 opencode 界面，让他自己来安装 
 
-#### 用法
+   | 插件                         | 功能                                                         |
+   | ---------------------------- | ------------------------------------------------------------ |
+   | **opencode-dcp**             | 后台自动把过期的终端输出、重复的日志从上下文里丢掉，省 token、防会话越跑越长。装上不用管，静默生效。 |
+   | **opencode-websearch-cited** | 让 Agent 能联网查资料，并且给出的每条结论都带来源链接。      |
 
-```bash
-# 进入 OpenCode 要操作的目录
-cd ~/Desktop/Agent-Learning
+   | Skills            | 功能                                                         |
+   | ----------------- | ------------------------------------------------------------ |
+   | **Grill Me**      | 动手改代码**之前**，反复追问方案：删这个功能会影响什么、依赖要不要一起去、怎么验证 —— 逼你把需求想清楚再开工。 |
+   | **Handoff**       | 把当前会话已聊清楚的需求、改到哪一步、还剩什么，压缩成一份 Markdown 存档；新开会话读它就能接着干。OpenChamber 用不上。 |
+   | **Agent Desktop** | 控制桌面 App：不抢鼠标的点击桌面 App                         |
+   | **Scrapling**     | 控制网页：网页自动化靠它                                     |
+   | **REA**           | Reverse-Engineer-Anything，逆向神器                          |
 
-# 启动 OpenCode
-opencode
+3. 安装 [OpenChamber 图像界面](https://github.com/openchamber/openchamber)
 
-# OpenCode 界面执行 Terminal 命令，以 ! 开头
-!pwd
-!ls -la
+   1. 添加项目目录：Add Project
+   2. 配置模型：DeepSeek V4.1 Flash 1017（之前在 opencode 终端已输入 API Key ，无需再填）
 
-# 如果想让 OpenCode 操作另一个目录，需要先退出当前 OpenCode，进入另一个目录，然后再次进入 OpenCode
-# 更优选择，开两个终端，各跑各的
+4. 用法
 
-# 导出全文
-/export
-```
+   ```bash
+   # 进入 OpenCode 要操作的目录
+   cd ~/Desktop/Agent-Learning
+   
+   # 启动 OpenCode
+   opencode
+   
+   # OpenCode 界面执行 Terminal 命令，以 ! 开头
+   !pwd
+   !ls -la
+   
+   # 如果想让 OpenCode 操作另一个目录，需要先退出当前 OpenCode，进入另一个目录，然后再次进入 OpenCode
+   # 更优选择，开两个终端，各跑各的
+   
+   # 导出全文
+   /export
+   ```
+
+5. 第 3 方中转站用法
+
+   >  太复杂了，让豆包桌面版托管来做吧
+   
+   > 1. 修改 ~/.config/opencode/opencode.jsonc
+   >
+   >    ```bash
+   >      "provider": {              ← ① 记住这一行
+   >        "openrouter": {          ← ② 和这一行
+   >          "options": {
+   >            "websearch_cited": {
+   >              "model": "x-ai/grok-4.1-fast"
+   >            }
+   >          }
+   >        }
+   >      },
+   >    ```
+   >
+   >    改成
+   >
+   >    ```bash
+   >      "provider": {              ← ① 记住这一行
+   >      
+   >          "deepseek-wife": {
+   >          "npm": "@ai-sdk/openai-compatible",
+   >          "name": "卡扣 标准版2折 (V4.1 Flash)",
+   >          "options": {
+   >            "baseURL": "[https://api.kakouai.com/v1](https://api.kakouai.com/v1)",
+   >            "apiKey": "{env:DEEPSEEK_WIFE_KEY}"
+   >          },
+   >          "models": {
+   >            "deepseek-v4.1-flash": { "name": "DeepSeek V4.1 Flash 1017" },
+   >            "glm-5.3-flash": { "name": "GLM 5.3 Flash" }
+   >          }
+   >        },
+   >      
+   >        "openrouter": {          ← ② 和这一行
+   >          "options": {
+   >            "websearch_cited": {
+   >              "model": "x-ai/grok-4.1-fast"
+   >            }
+   >          }
+   >        }
+   >      },
+   >    ```
+   >
+   >    * 不要动 `"default_agent"`、`"permission"`、`"plugin"`、`"mcp"` 这些原有内容。
+   >
+   > 2. **立刻验证一下有没有写坏**
+   >
+   >    ```bash
+   >    opencode models | grep deepseek-wife
+   >    ```
+   >
+   >    - 出现 `deepseek-wife/deepseek-v4.1-flash` 和 `deepseek-wife/glm-5.3-flash` → 写对了，继续下一步；
+   >    - 一行都没有 / 报 syntax error → 说明逗号或括号错了，执行这条回到改前：`cp ~/.config/opencode/opencode.jsonc.bak-20261113-184715 ~/.config/opencode/opencode.jsonc`，然后重来。
+   >
+   > 3. 放 中转站的 key
+   >
+   >    ```bash
+   >    mkdir -p ~/.secrets
+   >    printf '%s' 'sk-中转站的key' > ~/.secrets/deepseek-key-b && chmod 600 ~/.secrets/deepseek-key-b
+   >    ```
+   >
+   >    回到 ~/.config/opencode/opencode.jsonc，把
+   >
+   >    ```bash
+   >            "apiKey": "{env:DEEPSEEK_WIFE_KEY}"
+   >    ```
+   >
+   >    改成：
+   >
+   >    ```bash
+   >            "apiKey": "{file:~/.secrets/deepseek-key-b}"
+   >    ```
+   >
+   >    > 这一步为什么推荐写文件而不是环境变量：环境变量只在你终端里启动的 opencode 才读得到，从 Dock / OpenChamber 启动就 401。写文件两种启动方式都能读。
+   >
+   > 4. 完全退出 opencode，重开，验收
+   >
+   >    ```
+   >    opencode run -m deepseek-wife/deepseek-v4.1-flash "只回复OK"
+   >    ```
+   >
+   >    - 出 `OK` → **全通，收工**。
+   >    - 出 `401 / authentication` → key 没读到，重做第 5 步，用这条查长度：`wc -c ~/.secrets/deepseek-key-b`（应接近 67）。
+   >    - 出 `model not found / 404` → 模型 ID 不对，跑 `curl -s [https://api.kakouai.com/v1/models](https://api.kakouai.com/v1/models) -H "Authorization: Bearer $(cat ~/.secrets/deepseek-key-b)"` 看它到底返回哪几个 ID。
+   >
+   
+
+#### OpenCode 破甲（opencode-unrestricted）
+
+1. 确认 OpenCode 是 V1 版本
+
+2. 复制 V1 组件（只拷 `v1/` 下的单数目录）
+
+   ```bash
+   cp -R v1/agent v1/command v1/plugin ~/.config/opencode/
+   ```
+
+3. 写入 V1 配置到 /Users/sai/.config/opencode/opencode.jsonc
+
+   opencode.jsonc 初始内容
+
+   ```bash
+   {
+     "$schema": "https://opencode.ai/config.json",
+     "plugin": [
+       "@tarquinen/opencode-dcp@latest",
+       "opencode-websearch-cited@1.2.0"
+     ],
+     "provider": {
+       "openrouter": {
+         "options": {
+           "websearch_cited": {
+             "model": "x-ai/grok-4.1-fast"
+           }
+         }
+       }
+     },
+     "mcp": {
+       "rea": {
+         "type": "local",
+         "command": [
+           "npx",
+           "-y",
+           "rea-agents@6.7.0",
+           "mcp"
+         ],
+         "enabled": true
+       }
+     }
+   }
+   ```
+
+   修改后内容
+
+   ```bash
+   {
+     "$schema": "https://opencode.ai/config.json",
+     "default_agent": "unrestricted",
+     "permission": "allow",
+     "agent": {
+       "unrestricted": {
+         "mode": "primary",
+         "color": "#EF4444",
+         "permission": "allow",
+         "description": "默认主 agent。安全实验室：逆向/补丁/渗透/取证。工具优先。"
+       }
+     },
+     "plugin": [
+       "@tarquinen/opencode-dcp@latest",
+       "opencode-websearch-cited@1.2.0"
+     ],
+     "provider": {
+       "openrouter": {
+         "options": {
+           "websearch_cited": {
+             "model": "x-ai/grok-4.1-fast"
+           }
+         }
+       }
+     },
+     "mcp": {
+       "rea": {
+         "type": "local",
+         "command": [
+           "npx",
+           "-y",
+           "rea-agents@6.7.0",
+           "mcp"
+         ],
+         "enabled": true
+       }
+     }
+   }
+   ```
+
+4. 重启 opencode，按 Tab 应能切到 `unrestricted`
+
+5. 破甲后，就可以无视道德的反编译了

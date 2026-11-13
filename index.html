@@ -303,10 +303,56 @@
     <script>
         window.$docsify = {
             search: {
-                paths: 'auto',
+                paths: [
+                    "/FootPrint/Anki",
+                    "/FootPrint/Anki_template",
+                    "/FootPrint/Blog",
+                    "/FootPrint/Conda",
+                    "/FootPrint/Keyboard_Maestro",
+                    "/FootPrint/Mac_Skill",
+                    "/FootPrint/Marginnote",
+                    "/FootPrint/README",
+                    "/FootPrint/Sys_Initial",
+                    "/FootPrint/bandwagon",
+                    "/FootPrint/yoloV5",
+                    "/NoteBook/CountK",
+                    "/NoteBook/README",
+                    "/NoteBook/Trader温温",
+                    "/NoteBook/YTC",
+                    "/NoteBook/veilflame",
+                    "/NoteBook/上帝之城",
+                    "/NoteBook/北极星",
+                    "/NoteBook/学习笔记",
+                    "/NoteBook/我的朋友来自1918",
+                    "/NoteBook/杨姐",
+                    "/NoteBook/特训营",
+                    "/NoteBook/自在",
+                    "/NoteBook/自在文章",
+                    "/NoteBook/裸K",
+                    "/NoteBook/订单流交易",
+                    "/NoteBook/走过苦难",
+                    "/NoteBook/青鸟Deltapex",
+                    "/NoteBook/韭菜的自我修养",
+                    "/Warehouse/Git",
+                    "/Warehouse/HuZi",
+                    "/Warehouse/MySQL",
+                    "/Warehouse/Playwright",
+                    "/Warehouse/Playwright_work",
+                    "/Warehouse/PriceAction",
+                    "/Warehouse/README",
+                    "/Warehouse/TeXunYing",
+                    "/Warehouse/VSCode",
+                    "/Warehouse/XiaoMi",
+                    "/Warehouse/XingYanShe",
+                    "/Warehouse/css",
+                    "/Warehouse/xpath",
+                    "/Warehouse/期货市场技术分析",
+                ],
                 placeholder: '🔍 这是搜索框哦',
                 depth: 6,                       // 搜索标题的最大程级, 1 - 6
                 noData: '臣妾找不到啊',
+                namespace: 'v2',                // 换掉旧的残缺索引缓存
+                indexing: '正在建立索引，请稍候再搜…',   // 首次进站还没建完时显示
             },
             plugins: [
                 function(hook, vm) {
@@ -331,13 +377,12 @@
     <script src="//cdn.jsdelivr.net/npm/docsify/lib/docsify.js"></script>
     <!-- <script src="plugins/docsify.min.js"></script> -->
     <!-- 搜索模块 -->
-    <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+    <script src="plugins/search-docsify.min.js"></script>
     <!-- 图片缩放模块 -->
     <script src="plugins/zoom-image.js"></script>
     <!-- bash 代码高亮 -->
     <script src="plugins/prism-bash.min.js"></script>
     <!-- 复制代码块 -->
-    <script src="//unpkg.com/docsify-copy-code"></script>
     <script src="plugins/docsify-copy-code.min.js"></script>
     <!-- python 代码高亮 -->
     <script src="plugins/prism-python.js"></script>

@@ -84,18 +84,55 @@ maxAge: 3600000,       // 索引缓存多久重建一次（1 小时）
 否则浏览器会继续用旧结构的那份缓存，搜索直接报错。
 
 全站索引的实测规模：43 页 / 6352 块 / 约 2.2 MB，正好在 localStorage 5 MB 限额内；
-冷启动建索引约 0.7 秒（本地），真实访问还要加上抓 43 个 md 的网络时间。
+本地建索引约 0.2 秒，真实访问还要加上抓 43 个 md 的网络时间。
+
+## 8. 不再依赖别人的 CDN
+
+`index.html` 原来从 jsdelivr 拉 docsify 内核和主题：
+
+```html
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify/themes/vue.css">
+<script src="//cdn.jsdelivr.net/npm/docsify/lib/docsify.js"></script>
+```
+
+现在两个文件都放进了本仓库，指向本地：
+
+```html
+<link rel="stylesheet" href="plugins/vue.css?v=1">
+<script src="plugins/docsify.min.js?v=1"></script>
+```
+
+内核是 **4.13.1**（和搜索插件同一份源码编译出来的，也是所有测试跑过的那一套）。
+换掉之前线上用的是 CDN 上的 4.10.2，内核和插件版本并不一致。
+
+这么改以后：jsdelivr 挂了、被封、或者官方删库，博客都照常打开。
+`vue.css` 第一行原本还有一句 `@import` 去 Google Fonts 取 Source Sans Pro，
+国内拿不到时**会把整个页面卡住**（实测首屏 DOM 就绪从 45ms 变成 10 秒），
+也一起删掉了——字体退回系统自带的 Helvetica / Arial，排版看着没有区别。
+
+把 `index.html` 里所有外链都断掉实测过：首屏 54ms 就绪，页面、侧栏、搜索、定位、
+代码块、复制按钮全部正常。
+
+剩下的外部资源只有一类，不影响站点运行：笔记里插图用的
+`raw.githubusercontent.com/jiangsai0502/PicBedRepo`（779 处），是你自己的图床。
+真要彻底自主，得把这些图搬到仓库里。
+
+**以后升级 docsify 内核**：从 `~/Documents/GitHub/docsify` 重新 `npm run build:js`
+（内核）或 `npm run build:css:min`（主题），把 `lib/docsify.min.js`、`lib/themes/vue.css`
+复制进 `plugins/`，然后把 `?v=` 递增。
 
 ## 文件
 
 | 路径 | 说明 |
 |---|---|
-| `plugins/search-docsify.min.js` | 打好补丁的搜索插件（从 docsify 4.13.1 源码构建） |
+| `plugins/docsify.min.js` | docsify 内核 4.13.1（自托管，原来是 CDN） |
+| `plugins/vue.css` | docsify 默认主题（自托管，原来的 Google Fonts `@import` 已去掉） |
+| `plugins/search-docsify.min.js` | 打好补丁的搜索插件（从同一份 4.13.1 源码构建） |
 | `tools/update-search-paths.py` | 重新生成 `index.html` 里的路径列表 |
 
 ## 重新构建搜索插件
 
-补丁源码在 `~/Documents/GitHub/docsify`（分支 `search-cn`）：
+补丁源码在 `~/Documents/GitHub/docsify`（分支 `main`，也就是 GitHub 上的 `SaiDocsify`）：
 
 ```bash
 cd ~/Documents/GitHub/docsify
@@ -104,3 +141,15 @@ cp lib/plugins/search.min.js ~/Documents/GitHub/Sai0502.github.io/plugins/search
 ```
 
 改动在 `src/plugins/search/{search,component,index}.js`。
+
+内核和主题也从同一个仓库出：
+
+```bash
+cd ~/Documents/GitHub/docsify
+npm run build:js && npm run build:css:min
+cp lib/docsify.min.js lib/themes/vue.css ~/Documents/GitHub/Sai0502.github.io/plugins/
+```
+
+复制完记得把 `index.html` 里对应的 `?v=` 数字递增，否则浏览器会用缓存里的旧文件。
+另外 `npm run build:css:min` 出来的 `vue.css` 开头带着 Google Fonts 的 `@import`，
+复制过去以后要手动删掉那一行（就是它让国内打开时白屏 10 秒）。

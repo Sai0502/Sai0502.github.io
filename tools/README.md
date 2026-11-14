@@ -117,9 +117,43 @@ maxAge: 3600000,       // 索引缓存多久重建一次（1 小时）
 `raw.githubusercontent.com/jiangsai0502/PicBedRepo`（779 处），是你自己的图床。
 真要彻底自主，得把这些图搬到仓库里。
 
-**以后升级 docsify 内核**：从 `~/Documents/GitHub/docsify` 重新 `npm run build:js`
+**以后升级 docsify 内核**：从 `~/Documents/GitHub/SaiDocsify` 重新 `npm run build:js`
 （内核）或 `npm run build:css:min`（主题），把 `lib/docsify.min.js`、`lib/themes/vue.css`
 复制进 `plugins/`，然后把 `?v=` 递增。
+
+## 9. 搜索结果的顺序：栏目 → 侧栏 → 正文
+
+原来是按命中数降序（`b.count - a.count`）：搜「止损」时「仓储 HuZi (234 处) →
+NoteBook 订单流交易 (70 处) → 仓储 XingYanShe (60 处)」这样栏目前后跳，看着很乱。
+命中多只说明这篇反复提到这个词，跟它有多重要没关系。
+
+现在按**阅读顺序**排，三层：
+
+```
+栏目（index.html 顶部 <nav> 的次序）
+  └ 该栏目内文档（这个栏目的侧栏从上到下）
+      └ 页内命中（正文里的先后）
+```
+
+排序键就是 `search.paths` 的数组顺序（插件在 `init()` 时把它记成 `PAGE_RANK`，
+`search()` 按它排），所以**那个数组必须保持阅读顺序**。`tools/update-search-paths.py`
+已经照这几条生成：
+
+1. 栏目次序从 `index.html` 顶部的 `<nav>` 读（现在是 脚印 → 仓储 → NoteBook，
+   以后改 nav 或增删栏目，跑一次脚本就跟着变）；
+2. 栏内次序从该栏目的 `_sidebar.md` 读（脚印用根目录的 `_sidebar.md`）——
+   也就是你平时浏览时右侧看到的目录顺序；
+3. 侧栏没列出的页面排在该栏目**末尾**，按名字排序。
+
+命中数仍然显示在组头（「234 处」），但不再决定顺序。
+
+**维护方式**：想让某篇在搜索结果里往前，就在侧栏里把它往上挪，然后重跑一次
+`python3 tools/update-search-paths.py`。新加的笔记在进侧栏之前，会落在所在栏目的最后。
+侧栏目前只列了 43 篇里的 21 篇（NoteBook 18 篇只列了 4 篇），
+没列的那些就都堆在各自栏目的尾部。
+
+改排序**不需要**换 `namespace`：索引结构没变，只换了排序。但插件文件变了，
+`plugins/search-docsify.min.js?v=` 要递增。
 
 ## 文件
 
@@ -132,10 +166,11 @@ maxAge: 3600000,       // 索引缓存多久重建一次（1 小时）
 
 ## 重新构建搜索插件
 
-补丁源码在 `~/Documents/GitHub/docsify`（分支 `main`，也就是 GitHub 上的 `SaiDocsify`）：
+补丁源码在 `~/Documents/GitHub/SaiDocsify`（GitHub 上的同名仓库，就是 4.13.1 的源码）；
+`~/Documents/GitHub/docsify` 那个旧目录已经搬过去了：
 
 ```bash
-cd ~/Documents/GitHub/docsify
+cd ~/Documents/GitHub/SaiDocsify
 npm run build:js
 cp lib/plugins/search.min.js ~/Documents/GitHub/Sai0502.github.io/plugins/search-docsify.min.js
 ```
@@ -145,11 +180,11 @@ cp lib/plugins/search.min.js ~/Documents/GitHub/Sai0502.github.io/plugins/search
 内核和主题也从同一个仓库出：
 
 ```bash
-cd ~/Documents/GitHub/docsify
+cd ~/Documents/GitHub/SaiDocsify
 npm run build:js && npm run build:css:min
 cp lib/docsify.min.js lib/themes/vue.css ~/Documents/GitHub/Sai0502.github.io/plugins/
 ```
 
 复制完记得把 `index.html` 里对应的 `?v=` 数字递增，否则浏览器会用缓存里的旧文件。
-另外 `npm run build:css:min` 出来的 `vue.css` 开头带着 Google Fonts 的 `@import`，
-复制过去以后要手动删掉那一行（就是它让国内打开时白屏 10 秒）。
+主题的 Google Fonts `@import` 已经在源码 `src/themes/vue.styl` 里删掉了，
+重建出来的 `vue.css` 开头就是 `*{-webkit-font-smoothing...`，不用再手动处理。

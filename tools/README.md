@@ -10,7 +10,8 @@ Docsify 自带的搜索有三个坑，这一个目录里放的是补丁和配套
 
 现在 `index.html` 里换成了一份**写死的 43 个路径**。
 
-**以后新增或改名 md，必须跑一次：**
+**以后新增或改名 md，清单要跟着更新** —— 仓库装了 `pre-commit` 钩子，提交时自动做，
+不需要你记着跑（见第 9 节末尾）。忘了装钩子的话，手动跑一次：
 
 ```bash
 python3 tools/update-search-paths.py
@@ -147,10 +148,26 @@ NoteBook 订单流交易 (70 处) → 仓储 XingYanShe (60 处)」这样栏目�
 
 命中数仍然显示在组头（「234 处」），但不再决定顺序。
 
-**维护方式**：想让某篇在搜索结果里往前，就在侧栏里把它往上挪，然后重跑一次
-`python3 tools/update-search-paths.py`。新加的笔记在进侧栏之前，会落在所在栏目的最后。
-侧栏目前只列了 43 篇里的 21 篇（NoteBook 18 篇只列了 4 篇），
+**维护方式**：想让某篇在搜索结果里往前，就在侧栏里把它往上挪。新加的笔记在进侧栏之前，
+会落在所在栏目的最后。侧栏目前只列了 43 篇里的 21 篇（NoteBook 18 篇只列了 4 篇），
 没列的那些就都堆在各自栏目的尾部。
+
+`index.html` 里那份清单由 `tools/update-search-paths.py` 重建，**不需要你手动跑**：
+仓库装了 `pre-commit` 钩子，提交时自动重跑并把 `index.html` 一起加进这次提交。
+所以日常流程还是三步：写完 md → 在侧栏摆好位置 → 提交（桌面版或命令行都一样）。
+
+钩子在 `.git/hooks/`（git 不跟踪），新克隆/换电脑要装一次：
+
+```bash
+sh tools/install-hooks.sh
+```
+
+提交时如果 Python 不可用或脚本报错，钩子会**中止提交**并说明原因，而不是悄悄提交一份
+过期的清单；真要跳过用 `git commit --no-verify`。手动重建清单仍然可以：
+
+```bash
+python3 tools/update-search-paths.py
+```
 
 改排序**不需要**换 `namespace`：索引结构没变，只换了排序。但插件文件变了，
 `plugins/search-docsify.min.js?v=` 要递增。
@@ -162,7 +179,8 @@ NoteBook 订单流交易 (70 处) → 仓储 XingYanShe (60 处)」这样栏目�
 | `plugins/docsify.min.js` | docsify 内核 4.13.1（自托管，原来是 CDN） |
 | `plugins/vue.css` | docsify 默认主题（自托管，原来的 Google Fonts `@import` 已去掉） |
 | `plugins/search-docsify.min.js` | 打好补丁的搜索插件（从同一份 4.13.1 源码构建） |
-| `tools/update-search-paths.py` | 重新生成 `index.html` 里的路径列表 |
+| `tools/update-search-paths.py` | 重新生成 `index.html` 里的路径列表（顺序 = 栏目 → 侧栏） |
+| `tools/install-hooks.sh` | 装 `pre-commit` 钩子，提交时自动跑上面那个脚本 |
 
 ## 重新构建搜索插件
 

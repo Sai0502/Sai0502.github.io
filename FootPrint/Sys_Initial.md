@@ -1,3 +1,9 @@
+#### Docsify
+
+**新机器/重装系统后，从 GitHub 拉取博客后，第一次提交前，在仓库根目录跑一次 `sh tools/install-hooks.sh`，目的是重建插件/内核**
+
+> 如果不跑这条命令，旧笔记能搜到，新笔记搜不到，新系统只需要跑一次就行
+
 #### 常备软件
 
 > * 文字处理：office、sublime、Typora、Easydict、Paste、PDF expert、XMind
@@ -56,9 +62,9 @@ VPN开启后Chrome可翻墙，终端不行
 >    ```bash
 >    # 创建 .zshrc 文件
 >    echo >> ~/.zshrc
->                                                                                                                                     
+>                                                                                                                                        
 >    open ~/.zshrc
->                                                                                                                                     
+>                                                                                                                                        
 >    # 在文件最后添加下面两句
 >    export http_proxy="http://127.0.0.1:8234" export https_proxy="http://127.0.0.1:8234"
 >    ```
@@ -106,7 +112,7 @@ VPN开启后Chrome可翻墙，终端不行
 >    echo 'export HOMEBREW_NO_AUTO_UPDATE=1' >> ~/.zshrc
 >    # 安装某个包时，如果它已经安装过但版本旧了，不要自动把它升级到最新版
 >    echo 'export HOMEBREW_NO_INSTALL_UPGRADE=1' >> ~/.zshrc
->                   
+>                      
 >    # 立即重新加载并执行 ~/.zshrc 里的配置，使修改马上生效
 >    source ~/.zshrc
 >    ```
@@ -248,14 +254,14 @@ VPN开启后Chrome可翻墙，终端不行
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->                                                                             
+>                                                                                 
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->                                                                             
+>                                                                                 
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 >

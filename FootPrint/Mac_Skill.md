@@ -613,3 +613,35 @@ opencode
 4. 重启 opencode，按 Tab 应能切到 `unrestricted`
 
 5. 破甲后，就可以无视道德的反编译了
+
+
+
+#### Parallels Desktop 的 win11 安装 OpenCode
+
+> 虚拟机的 OpenCode 定位：**隔离沙箱环境**，专门放风险 token、陌生插件，和 Mac 主环境彻底分开
+
+1. 安装 Ubuntu
+
+   ```bash
+   wsl --install -d Ubuntu --web-download
+   ```
+
+2. 安装成功，设置 Linux 用户名、密码，一路回车，进入 bash 环境
+
+   ```bash
+   sai@DESKTOP-xxxx:~$
+   ```
+
+3. 安装 OpenCode
+
+   ```bash
+   curl -fsSL https://opencode.ai/install | bash
+   ```
+
+4. 启动 OpenCode
+
+   ```bash
+   opencode
+   ```
+
+5. 

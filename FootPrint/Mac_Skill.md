@@ -614,7 +614,109 @@ opencode
 
 5. 破甲后，就可以无视道德的反编译了
 
+#### 修改配置让中转站的 DeepSeek 模型能识别图片的文字、颜色、布局
 
+> /Users/sai/.config/opencode/opencode.jsonc改成
+
+```bash
+{
+  "$schema": "https://opencode.ai/config.json",
+  // 【默认Agent】启动OpenCode时自动选中这个Agent
+  "default_agent": "unrestricted",
+  // 全局权限策略：allow = 默认允许Agent执行工具/命令（你的场景是逆向、实验室，放开）
+  "permission": "allow",
+
+  // Agent 定义：Agent是一套独立的身份、权限、描述、配色
+  "agent": {
+    "unrestricted": {
+      "mode": "primary",       // primary = 主Agent，作为主力会话
+      "color": "#EF4444",       // 会话界面里这个Agent标识的颜色（红色）
+      "permission": "allow",    // 这个Agent单独的权限：允许调用工具、执行命令
+      "description": "默认主 agent。安全实验室：逆向/补丁/渗透/取证。工具优先。"
+    }
+  },
+
+  // 插件列表，自动加载这两个npm插件
+  "plugin": [
+    "@tarquinen/opencode-dcp@latest",   // DCP插件：文档/项目上下文打包，给Agent读整个项目代码
+    "opencode-websearch-cited@1.2.0"   // 带引用溯源的联网搜索插件，搜索结果带来源标注
+  ],
+
+  // 模型提供商配置区（多个不同API渠道，OpenCode在这里加载所有模型来源）
+  "provider": {
+    // OpenRouter 海外渠道
+    "openrouter": {
+      "options": {
+        // websearch-cited 搜索插件指定使用这个模型来做联网搜索
+        "websearch_cited": {
+          "model": "x-ai/grok-4.1-fast"
+        }
+      }
+    },
+
+    // 卡扣 Kakou 中转渠道（你命名 deepseek-wife）
+    "deepseek-wife": {
+      "npm": "@ai-sdk/openai-compatible", // 使用通用OpenAI兼容适配器对接
+      "name": "Kakou 卡扣2折",           // 在UI里显示给你看的渠道名字
+      "options": {
+        "baseURL": "https://api.kakouai.com/v1", // 中转接口地址
+        "apiKey": "{file:~/.secrets/deepseek-key-b}" // 密钥不从配置明文写，从外部密钥文件读取（安全）
+      },
+      "models": { // 这个渠道下可用的模型清单
+        "deepseek-v4.1-flash": {
+          "name": "卡扣·DeepSeek V4.1 Flash", // UI展示名称
+          "attachment": true,                 // 支持上传附件
+          "modalities": {                     // 支持的输入输出模态
+            "input": ["text", "image"],       // 可以发文字、图片（就是你截图识别图片的能力）
+            "output": ["text"]
+          }
+        },
+        "glm-5.3-flash": {
+          "name": "卡扣·GLM 5.3 Flash"
+        }
+      }
+    },
+
+    // Moniker 国模福利中转渠道
+    "moniker": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Moniker 国模福利 0.2x",
+      "options": {
+        "baseURL": "https://aimoniker.top/v1",
+        "apiKey": "{file:~/.secrets/moniker-key}" // 密钥单独存放在密钥目录，不写死在配置里
+      },
+      "models": { // Moniker渠道下所有启用模型
+        "deepseek-v4.1-flash": {
+          "name": "国模·DeepSeek V4.1 Flash（快）",
+          "attachment": true,
+          "modalities": {
+            "input": ["text", "image"], // 支持图片上传、截图识图
+            "output": ["text"]
+          }
+        },
+        "kimi-k3": {
+          "name": "国模·Kimi K3"
+        }
+      }
+    }
+  },
+
+  // MCP服务配置：MCP = 给Agent扩展外部工具的服务
+  "mcp": {
+    "rea": {
+      "type": "local",          // 本地启动MCP进程
+      "command": [
+        "npx",
+        "-y",
+        "rea-agents@6.7.0",
+        "mcp"
+      ],
+      "enabled": true           // 启用REA逆向MCP工具，就是你做逆向、反编译分析用的工具集
+    }
+  }
+}
+
+```
 
 #### Parallels Desktop 的 win11 安装 OpenCode
 
@@ -644,4 +746,238 @@ opencode
    opencode
    ```
 
-5. 
+#### 飞书机器人
+
+1. 飞书规则
+
+   1. 每个手机号各注册一个账号，一个账号可归属不同的组织，每次登录后选择要进入的组织
+
+   2. 组织类型：
+      1. 个人版租户：不能调用 Open API（飞书开放平台接口） 收发送消息
+
+      2. 企业团队：能调用 OpenAI 收发送消息
+
+2. 注册飞书
+
+   1. [网页注册](https://www.feishu.cn)：关键一步「选择角色」必须选「企业或组织负责人」
+
+   2. 验证是否已加入「企业团队」：登录 → 左下角进入「管理后台」 → 用户名下方有没有 **「企业编号」**（形如 FQZ163DN5X1）
+
+   3. [开发者后台](https://open.feishu.cn/)
+
+      1. 右上角「开发者后台」 → 「创建企业自建应用」 → 名称「测一测」 
+
+      2. 左侧「凭证与基础信息」 → 复制 App ID、App Secret（Secret 只显示一次，看不到就重置）
+
+      3. 再次验证当前已加入企业团队
+
+         ```bash
+         # 用上述复制 App ID、App Secret 替换 cli_xxx、xxx
+         curl -s -X POST 'https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal' \
+           -H 'Content-Type: application/json' \
+           -d '{"app_id":"cli_xxx","app_secret":"xxx"}'
+           
+         # 输出
+         {"code":0,"expire":7200,"msg":"ok","tenant_access_token":"t-g104bxxxxxxxxxxxxxxxxxxxxxUXT6CV"}%
+         ```
+
+         ✅ **完成标志**：返回 {"code":0,"tenant_access_token":"t-…"}
+
+         ❌ **不通过**：返回 {"code":21001,…,"msg":"Access denied due to platform policy"} → **立刻停手**，说明当前组织是个人版性质。
+
+   4.  安装机器人能力（在开发者后台）
+
+      1. 左侧「添加应用能力」 → 添加「机器人」 → 左侧「添加应用能力」出现机器人
+
+      2. 左侧「权限管理」 → 开通权限 → 搜索并逐个开通
+
+         | 权限                                  | 作用                                  |
+         | ------------------------------------- | ------------------------------------- |
+         | im:message                            | 读用户发给机器人的消息「允许 / 拒绝」 |
+         | im:message:send_as_bot                | 以机器人身份发消息                    |
+         | im:message:send_multi_depts           | 多部门范围发送                        |
+         | im:chat:readonly                      | 读群 / 会话信息                       |
+         | contact:user.id:readonly              | 手机号 ↔ open_id 转换                 |
+         | im:message.group_msg:include_bot_read | 获取群组中用户和机器人发送的消息      |
+
+      3. 左侧「事件与回调」 → 订阅方式 → 使用「长连接」接收事件 → 保存 → 添加事件 → 搜索 im.message.receive_v1→ 添加
+
+      4. 左侧「版本管理与发布」 → 创建版本 → 保存 → 确认发布/申请发布
+
+3. Mac 版飞书配置
+
+   1. 配置双向互动机器人
+
+      1. 手机 App 登录的必须是飞书，不能是 Lark（Lark 是海外版，飞书账号登不进去）
+
+      2. 电脑版搜索「测一测」（前面创建的企业自建应用），给它发个 Hello
+
+      3. 拿 chat_id 或 open_id
+
+         ```bash
+         APP_ID="cli_xxx"
+         APP_SECRET="xxxxxx"
+         MOBILE="+86你的手机号"
+         
+         # 1) 取 token（有效期 2 小时，过期重跑即可）
+         TOKEN=$(curl -s -X POST 'https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal' \
+           -H 'Content-Type: application/json' \
+           -d "{\"app_id\":\"$APP_ID\",\"app_secret\":\"$APP_SECRET\"}" \
+           | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d["tenant_access_token"])')
+         echo "TOKEN=$TOKEN"
+         
+         # 2) 手机号换 open_id
+         OPEN_ID=$(curl -s -X POST 'https://open.feishu.cn/open-apis/contact/v3/users/batch_get_id?user_id_type=open_id' \
+           -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+           -d "{\"mobiles\":[\"$MOBILE\"]}" \
+           | python3 -c 'import sys,json;print(json.load(sys.stdin)["data"]["user_list"][0]["user_id"])')
+         echo "OPEN_ID=$OPEN_ID"
+         
+         # 3) 用 open_id 发测试消息（响应里顺带返回 chat_id）
+         curl -s -X POST 'https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=open_id' \
+           -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+           -d "{\"receive_id\":\"$OPEN_ID\",\"msg_type\":\"text\",\"content\":\"{\\\"text\\\":\\\"测试\\\"}\"}" \
+           | python3 -c 'import sys,json;d=json.load(sys.stdin);print("code:",d.get("code"),d.get("msg"));print("CHAT_ID=",d.get("data",{}).get("chat_id"))'
+         ```
+
+         期望输出 4 行：
+
+         ```bash
+         TOKEN=t-...
+         OPEN_ID=ou_...
+         code: 0 success
+         CHAT_ID= oc_...
+         ```
+
+         - 第 2 步输出空 → 说明该手机号不是本组织成员，或 contact:user.id:readonly 没开通。
+
+         - 第 3 步 code:0 且手机收到「测试」2 字 → ✅ 完成标志机器人发送通了；响应里的 CHAT_ID 就是 oc_xxxx，留着备用。
+
+   2. 配置单向通知机器人
+
+      > ```bash
+      > 你的脚本 / 终端
+      >       │  发一段 HTTP 请求（就是一条 curl）
+      >       ▼
+      > https://open.feishu.cn/open-apis/bot/v2/hook/xxxxx   ← 飞书给的 webhook 地址
+      >       │
+      >       ▼
+      > 飞书服务器 ──► 手机接收通知
+      > ```
+
+      1. 建群
+
+         > 左上角 `+` → 创建群组 → 群名 `电脑提醒` → 创建（成员只有自己）
+
+      2. 添加「自定义机器人」拿 Webhook 地址
+
+         > 群右上角 `⋯`→「设置」→ 「群机器人」→「添加机器人」→ 「自定义机器人」→ 名称 `OpenChamber 提醒` →「添加」→ 复制 webhook 地址 → 安全设置 勾选「自定义关键词」→ 填：`OpenChamber 提醒`
+
+      3. 把 Webhook 存进本机
+
+         1. 建目录
+
+            ```bash
+            mkdir -p ~/.secrets && chmod 700 ~/.secrets
+            ```
+
+         2. 存 Webhook
+
+            ```bash
+            printf '请粘贴 webhook 后回车: '
+            read -r H && printf '%s' "$H" > ~/.secrets/feishu-oc-webhook && chmod 600 ~/.secrets/feishu-oc-webhook
+            ```
+
+            执行后会停住等你粘贴 Webhook，粘贴完按回车。
+
+         3. 校验是否存对
+
+            ```bash
+            # 下述命令输出的值在 75 ~ 95 之间
+            wc -c < ~/.secrets/feishu-oc-webhook
+            
+            # 下述命令输出 https://open.feishu.cn/open-apis/bot/v2/
+            head -c 40 ~/.secrets/feishu-oc-webhook; echo    
+            ```
+
+         4. 让命令能在任何目录下直接敲
+
+            ```bash
+            mkdir -p ~/.local/bin
+            grep -q '.local/bin' ~/.zshrc || echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+            source ~/.zshrc
+            echo $PATH | grep -o "$HOME/.local/bin"
+            ```
+
+            输出 `/Users/用户名/.local/bin` 就说明路径已生效
+
+      4. 安装推送工具 ocnotify（AI 来做）
+
+      5. 推送测试（手机应在 1 秒内收到）
+
+         ```
+         ocnotify -t "接通了" "如果手机收到这条，说明整条链路通了"
+         ```
+
+      6. 实际应用
+
+      7. 实际场景应用
+
+         1. 场景一：活儿干完的时候发个提醒
+
+            | 场景                 | 什么时候响 | 你的实际例子                              |
+            | -------------------- | ---------- | ----------------------------------------- |
+            | 脚本 / 程序跑完      | 结束那一刻 | 跑完一个 Python 数据分析脚本              |
+            | 编译 / 打包完        | 结束那一刻 | Xcode 构建 SaiShot、打 ipa                |
+            | 下载完成             | 结束那一刻 | 下载历史行情数据、下大文件                |
+            | 转码 / 渲染 / 压缩完 | 结束那一刻 | 视频转码、批量压缩图片                    |
+            | 数据抓取完           | 结束那一刻 | 爬虫跑完、Databento 拉数据跑完            |
+            | 回测 / 批量计算完    | 结束那一刻 | 跑几百组参数的回测                        |
+            | 文件同步 / 备份完    | 结束那一刻 | rsync 到移动硬盘、Time Machine 之外的备份 |
+            | 批量改名 / 整理完    | 结束那一刻 | 一批文件重命名、归档                      |
+
+         2. 场景二：干活中途出事的时候发个提醒
+
+            | 场景                | 什么时候响                     |
+            | ------------------- | ------------------------------ |
+            | 脚本报错 / 失败     | 失败那一刻（成功不响，不吵你） |
+            | 程序崩溃 / 意外退出 | 退出那一刻                     |
+            | 后台服务挂了        | 服务停止那一刻                 |
+            | 任务卡死 / 超时     | 超过设定时间还没结束           |
+            | 磁盘快满了          | 剩余空间低于阈值               |
+            | 外接硬盘 / U 盘掉线 | 卸载那一刻                     |
+            | 网络断了            | 检测到断网                     |
+            | 内存 / CPU 爆了     | 超过阈值                       |
+            | 电池快没电了        | 低于百分比                     |
+
+         3. 场景三：到点的时候发个提醒
+
+            | 场景               | 什么时候响                   |
+            | ------------------ | ---------------------------- |
+            | 每天固定时间提醒   | 到点那一刻                   |
+            | 周期性任务         | 每天 / 每小时 / 每周固定节奏 |
+            | 盘前 / 收盘提醒    | 到点那一刻                   |
+            | 该睡觉了 / 该起来  | 到点那一刻                   |
+            | 长时间任务中途抽查 | 每隔 N 分钟响一次            |
+
+         4. 场景四：条件满足时发个提醒
+
+            > 这一类比前面稍微费点事（需要挂个一直在盯的小程序），但完全能做。
+
+            | 场景                             | 什么时候响 |
+            | -------------------------------- | ---------- |
+            | 价格摸到某个值                   | 触发那一刻 |
+            | 某个文件出现 / 被改动            | 出现那一刻 |
+            | 某个进程启动了                   | 启动那一刻 |
+            | 网页内容变了（库存、放号、抢票） | 变化那一刻 |
+            | 收到特定邮件                     | 到达那一刻 |
+            | 某个文件夹里有新文件             | 出现那一刻 |
+
+         5. 场景五：AI 干活卡住时发个提醒
+
+            | 场景                            | 什么时候响       |
+            | ------------------------------- | ---------------- |
+            | Agent 要你做决策（选 A 还是 B） | 它弹出问题的瞬间 |
+
+
+      

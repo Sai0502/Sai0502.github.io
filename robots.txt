@@ -1,0 +1,6 @@
+# 目的：整站不出现在 Google 搜索结果中。
+# 注意：HTML 外壳必须允许抓取，否则搜索引擎读不到 index.html 里的 noindex。
+User-agent: *
+Disallow: /*.md$
+Disallow: /*.pdf$
+Disallow: /*.txt$

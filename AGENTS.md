@@ -268,6 +268,8 @@ const browser = await chromium.launch({
 
 ## 12. 别做的事
 
+- **别删 `index.html` 里的 `<meta name="robots" content="noindex, nofollow">`**：这行是有意加的，目的是整站不出现在 Google 搜索结果中。它看着像残留垃圾，删掉就等于把站重新交出去。
+- **别删 `robots.txt`，也别往它里面加 `Disallow: /`**：它只按扩展名（`.md` / `.pdf` / `.txt`）挡住裸文件抓取，HTML 外壳必须保持可抓——否则 Google 读不到那条 noindex，反而可能留下一个只有网址、没有摘要的记录。
 - **别手改 `plugins/*.min.js`**：下次构建就丢，源码在 `SaiDocsify`。
 - **别把 `index.html` 转成 LF**。
 - **别把 `paths` 改回 `'auto'`**：会退回"只索引当前栏目侧栏"的残状态（22 篇搜不到）。

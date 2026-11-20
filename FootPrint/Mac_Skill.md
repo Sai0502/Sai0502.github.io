@@ -430,6 +430,9 @@ opencode
    
    # 导出全文
    /export
+   
+   # 继续上次会话
+   opencode --continue
    ```
 
 5. 第 3 方中转站用法
@@ -702,6 +705,8 @@ opencode
   },
 
   // MCP服务配置：MCP = 给Agent扩展外部工具的服务
+  // 平常不用时 "enabled": true 换成 false 否则比较费资源
+  // 这会同时影响 OpenCode 和 OpenChamber，修改后重启哪一个应用到哪一个
   "mcp": {
     "rea": {
       "type": "local",          // 本地启动MCP进程
@@ -711,7 +716,7 @@ opencode
         "rea-agents@6.7.0",
         "mcp"
       ],
-      "enabled": true           // 启用REA逆向MCP工具，就是你做逆向、反编译分析用的工具集
+      "enabled": true           // 启用REA逆向MCP工具
     }
   }
 }
@@ -980,4 +985,4 @@ opencode
             | Agent 要你做决策（选 A 还是 B） | 它弹出问题的瞬间 |
 
 
-      
+​      

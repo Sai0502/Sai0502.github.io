@@ -535,9 +535,7 @@ opencode
    cp -R v1/agent v1/command v1/plugin ~/.config/opencode/
    ```
 
-3. 写入 V1 配置到 /Users/sai/.config/opencode/opencode.jsonc
-
-   opencode.jsonc 初始内容
+3. 写入 V1 配置到 /Users/sai/.config/opencode/opencode.jsonc，其初始内容如下
 
    ```bash
    {
@@ -569,50 +567,13 @@ opencode
      }
    }
    ```
-
+   
    修改后内容
 
    ```bash
-   {
-     "$schema": "https://opencode.ai/config.json",
-     "default_agent": "unrestricted",
-     "permission": "allow",
-     "agent": {
-       "unrestricted": {
-         "mode": "primary",
-         "color": "#EF4444",
-         "permission": "allow",
-         "description": "默认主 agent。安全实验室：逆向/补丁/渗透/取证。工具优先。"
-       }
-     },
-     "plugin": [
-       "@tarquinen/opencode-dcp@latest",
-       "opencode-websearch-cited@1.2.0"
-     ],
-     "provider": {
-       "openrouter": {
-         "options": {
-           "websearch_cited": {
-             "model": "x-ai/grok-4.1-fast"
-           }
-         }
-       }
-     },
-     "mcp": {
-       "rea": {
-         "type": "local",
-         "command": [
-           "npx",
-           "-y",
-           "rea-agents@6.7.0",
-           "mcp"
-         ],
-         "enabled": true
-       }
-     }
-   }
+   
    ```
-
+   
 4. 重启 opencode，按 Tab 应能切到 `unrestricted`
 
 5. 破甲后，就可以无视道德的反编译了
@@ -625,12 +586,18 @@ opencode
 {
   "$schema": "https://opencode.ai/config.json",
   // 【默认Agent】启动OpenCode时自动选中这个Agent
-  "default_agent": "unrestricted",
+  "default_agent": "plan",
   // 全局权限策略：allow = 默认允许Agent执行工具/命令（你的场景是逆向、实验室，放开）
   "permission": "allow",
 
   // Agent 定义：Agent是一套独立的身份、权限、描述、配色
   "agent": {
+    "plan": {
+      "mode": "primary",
+      "color": "#3B82F6",
+      "permission": "allow",
+      "description": "plan agent，规划、拆解、方案分析、前置研讨"
+    },
     "unrestricted": {
       "mode": "primary",       // primary = 主Agent，作为主力会话
       "color": "#EF4444",       // 会话界面里这个Agent标识的颜色（红色）
@@ -678,29 +645,6 @@ opencode
           "name": "卡扣·GLM 5.3 Flash"
         }
       }
-    },
-
-    // Moniker 国模福利中转渠道
-    "moniker": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Moniker 国模福利 0.2x",
-      "options": {
-        "baseURL": "https://aimoniker.top/v1",
-        "apiKey": "{file:~/.secrets/moniker-key}" // 密钥单独存放在密钥目录，不写死在配置里
-      },
-      "models": { // Moniker渠道下所有启用模型
-        "deepseek-v4.1-flash": {
-          "name": "国模·DeepSeek V4.1 Flash（快）",
-          "attachment": true,
-          "modalities": {
-            "input": ["text", "image"], // 支持图片上传、截图识图
-            "output": ["text"]
-          }
-        },
-        "kimi-k3": {
-          "name": "国模·Kimi K3"
-        }
-      }
     }
   },
 
@@ -716,11 +660,10 @@ opencode
         "rea-agents@6.7.0",
         "mcp"
       ],
-      "enabled": true           // 启用REA逆向MCP工具
+      "enabled": false           // 启用REA逆向MCP工具
     }
   }
 }
-
 ```
 
 #### Parallels Desktop 的 win11 安装 OpenCode

@@ -62,9 +62,9 @@ VPN开启后Chrome可翻墙，终端不行
 >    ```bash
 >    # 创建 .zshrc 文件
 >    echo >> ~/.zshrc
->                                                                                                                                        
+>                                                                                                                                           
 >    open ~/.zshrc
->                                                                                                                                        
+>                                                                                                                                           
 >    # 在文件最后添加下面两句
 >    export http_proxy="http://127.0.0.1:8234" export https_proxy="http://127.0.0.1:8234"
 >    ```
@@ -112,7 +112,7 @@ VPN开启后Chrome可翻墙，终端不行
 >    echo 'export HOMEBREW_NO_AUTO_UPDATE=1' >> ~/.zshrc
 >    # 安装某个包时，如果它已经安装过但版本旧了，不要自动把它升级到最新版
 >    echo 'export HOMEBREW_NO_INSTALL_UPGRADE=1' >> ~/.zshrc
->                      
+>                         
 >    # 立即重新加载并执行 ~/.zshrc 里的配置，使修改马上生效
 >    source ~/.zshrc
 >    ```
@@ -254,14 +254,14 @@ VPN开启后Chrome可翻墙，终端不行
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->                                                                                 
+>                                                                                     
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->                                                                                 
+>                                                                                     
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 >
@@ -1006,6 +1006,8 @@ VPN开启后Chrome可翻墙，终端不行
 
   ```bash
   sudo code /etc/hosts
+  # 或者
+  sudo nano /etc/hosts
   ```
 
 * 在VS Code  中修改并保存（保存时弹窗询问是否允许覆盖，点击允许并输入密码即可）
@@ -1053,6 +1055,8 @@ VPN开启后Chrome可翻墙，终端不行
   127.0.0.1 swquery.apple.com
   127.0.0.1 updates.cdn-apple.com
   127.0.0.1 updates-http.cdn-apple.com
+  127.0.0.1 oscdn.apple.com
+  127.0.0.1 appldnld.apple.com
   ::1 gdmf.apple.com
   ::1 mesu.apple.com
   ::1 swscan.apple.com
@@ -1062,6 +1066,8 @@ VPN开启后Chrome可翻墙，终端不行
   ::1 swquery.apple.com
   ::1 updates.cdn-apple.com
   ::1 updates-http.cdn-apple.com
+  ::1 oscdn.apple.com
+  ::1 appldnld.apple.com
   ```
 
 * 刷新 DNS 缓存
@@ -1070,27 +1076,46 @@ VPN开启后Chrome可翻墙，终端不行
   sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder
   ```
   
-* 禁止更新
+* 关掉自动检查
 
   ```bash
-  sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate AutomaticCheckEnabled -bool false
-  sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate AutomaticDownload -bool false
-  sudo defaults write /Library/Preferences/com.apple.SoftwareUpdate AutomaticallyInstallMacOSUpdates -bool false
-  defaults delete com.apple.SoftwareUpdate AvailableUpdatesNotificationCountKey 2>/dev/null
-  defaults delete com.apple.SoftwareUpdate AvailableUpdatesNotificationProductKey 2>/dev/null
-  defaults delete com.apple.SoftwareUpdate UserNotificationDate 2>/dev/null
-  killall SoftwareUpdateNotificationManager 2>/dev/null
+  P=/Library/Preferences/com.apple.SoftwareUpdate.plist
+  sudo defaults write $P AutomaticCheckForUpdates -bool false
+  sudo defaults write $P AutomaticDownload -bool false
+  sudo defaults write $P AutomaticallyInstallMacOSUpdates -bool false
+  sudo defaults write $P ConfigDataInstall -bool false
+  sudo defaults write $P CriticalUpdateInstall -bool false
+  sudo defaults delete $P RecommendedUpdates 2>/dev/null
+  sudo killall softwareupdated; sudo killall cfprefsd
   ```
 
+* 系统设置手动确认
+
+  * **通用 > 软件更新 > ⓘ** —— `自动更新`、`下载新更新`、`安装 macOS 更新`、`安装安全响应` 全部关闭
+  
+  * **通知 > 软件更新** —— 关闭通知（系统没列出来就跳过）
+  
+  * **通用 > 软件更新** 停在「无法检查更新」是**正常且预期**的，说明屏蔽生效
+  
 * 验证是否生效
 
   ```bash
-  # 输出 0 = 成功
-  defaults read /Library/Preferences/com.apple.SoftwareUpdate AutomaticCheckEnabled
-  # 无输出 = 推送进程已退出
-  pgrep -fl SoftwareUpdateNotificationManager
+  echo "1) 自动检查是否关闭（期望 0）"
+  defaults read /Library/Preferences/com.apple.SoftwareUpdate AutomaticCheckForUpdates
   
-  # 万一弹窗还在屏幕上，点一次「稍后提醒我」关掉即可，之后不会再出现（提醒已被清空）。
+  echo "2) 待装列表（期望空数组 ()）"
+  defaults read /Library/Preferences/com.apple.SoftwareUpdate RecommendedUpdates
+  
+  echo "3) 更新域名是否连不上（期望 000）"
+  curl -m 5 -o /dev/null -s -w '%{http_code}\n' https://gdmf.apple.com/v2/pmv
+  
+  echo "4) 系统层检查（期望报「不能连接到软件更新服务器」）"
+  softwareupdate --list
+  
+  echo "5) Xcode 未受影响（期望正常版本号）"
+  xcodebuild -version
+  
+  # 第 3、4 条比 pgrep 有用得多——它们直接验证「更新通道断了」这个结果，而不是去猜某个进程在不在。
   ```
 
 ##### iPhone 桌面展示多张照片

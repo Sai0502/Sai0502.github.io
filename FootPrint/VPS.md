@@ -280,6 +280,77 @@ Do you want to continue with the modification? [y/n]    # 输入 n
        - 右键该订阅 → 使用（激活）
        - 左侧 → 代理 → 选 `vless-20727` → 延迟测试
 
+   - 修改配置文件
+
+     > 症状：Google、YouTube 正常，`chatgpt.com`、`x.com` 打不开
+     >
+     > 解决方式如下
+
+     订阅 → 右键`default.yaml` → 编辑规则 → 直接点「取消」
+
+     ```bash
+     cd ~/Library/Application\ Support/io.github.clash-verge-rev.clash-verge-rev/profiles
+     grep -l "Rules Template" *.yaml
+     
+     # 输出 xxxxxxxxxx.yaml
+     ```
+
+     打开 xxxxxxxxxx.yaml，将下述设置写入该文件
+
+     > 下述「节点选择」其实是Clash Verge → 代理 → 代理组的名称，如果重装后改名了，要替换
+     >
+     > ![image-20261123194129602](https://raw.githubusercontent.com/jiangsai0502/PicBedRepo/master/img/20261123194129-image-20261123194129602.png)
+
+     ```bash
+     prepend:
+       - DOMAIN-SUFFIX,chatgpt.com,节点选择
+       - DOMAIN-SUFFIX,openai.com,节点选择
+       - DOMAIN-SUFFIX,oaistatic.com,节点选择
+       - DOMAIN-SUFFIX,oaiusercontent.com,节点选择
+       - DOMAIN-SUFFIX,sora.com,节点选择
+       - DOMAIN-SUFFIX,x.com,节点选择
+       - DOMAIN-SUFFIX,twitter.com,节点选择
+       - DOMAIN-SUFFIX,twimg.com,节点选择
+       - DOMAIN-SUFFIX,t.co,节点选择
+     
+     append: []
+     
+     delete: []
+     ```
+
+     同目录下的 Merge.yaml，将下述设置写入该文件
+
+     > 下述「节点选择」其实是Clash Verge → 代理 → 代理组的名称，如果重装后改名了，要替换
+
+     ```bash
+     profile:
+       store-selected: true
+     
+     dns:
+       enable: true
+       listen: 0.0.0.0:1053
+       enhanced-mode: fake-ip
+       fake-ip-range: 198.18.0.1/16
+       fake-ip-filter:
+         - "*.lan"
+         - "*.local"
+         - "localhost.ptlogin2.qq.com"
+       nameserver:
+         - https://doh.pub/dns-query
+         - https://dns.alidns.com/dns-query
+       fallback:
+         - https://dns.google/dns-query#节点选择
+         - https://cloudflare-dns.com/dns-query#节点选择
+       fallback-filter:
+         geoip: true
+         geoip-code: CN
+       nameserver-policy:
+         "chatgpt.com,openai.com,oaistatic.com,oaiusercontent.com,sora.com": https://doh.pub/dns-query
+         "x.com,twitter.com,twimg.com,t.co": https://doh.pub/dns-query
+     ```
+
+     重启 Clash Verge Rev
+
    - 开启代理
 
      |            | 系统代理模式           | TUN 虚拟网卡模式                 |
@@ -293,8 +364,6 @@ Do you want to continue with the modification? [y/n]    # 输入 n
 
      1. 系统代理模式：通过 HTTP/SOCKS 代理转发，覆盖大部分应用，一般用「系统代理」模式就够了，但为了确保 Altas 一定会走 VPS，所以我们使用TUN 模式
      2. 若某些应用不走代理，可额外开 TUN 模式。
-
-   - 验证：浏览器打开 google.com，能访问就成功了
 
 8. 配置 Windows - Clash Verge
 

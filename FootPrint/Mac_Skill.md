@@ -529,9 +529,14 @@ opencode
 
 1. 确认 OpenCode 是 V1 版本
 
+   ```bash
+   opencode --version
+   ```
+
 2. 复制 V1 组件（只拷 `v1/` 下的单数目录）
 
    ```bash
+   # 进入 Unrestricted-OpenCode 目录
    cp -R v1/agent v1/command v1/plugin ~/.config/opencode/
    ```
 
@@ -567,14 +572,102 @@ opencode
      }
    }
    ```
-   
+
    修改后内容
 
    ```bash
+   {
+     "$schema": "https://opencode.ai/config.json",
+     // 【默认Agent】启动OpenCode时自动选中这个Agent
+     "default_agent": "plan",
+     // 全局权限策略：allow = 默认允许Agent执行工具/命令（你的场景是逆向、实验室，放开）
+     "permission": "allow",
    
+     // Agent 定义：Agent是一套独立的身份、权限、描述、配色
+     "agent": {
+       "plan": {
+         "mode": "primary",
+         "color": "#3B82F6",
+         "permission": "allow",
+         "description": "plan agent，规划、拆解、方案分析、前置研讨"
+       },
+       "unrestricted": {
+         "mode": "primary",       // primary = 主Agent，作为主力会话
+         "color": "#EF4444",       // 会话界面里这个Agent标识的颜色（红色）
+         "permission": "allow",    // 这个Agent单独的权限：允许调用工具、执行命令
+         "description": "默认主 agent。安全实验室：逆向/补丁/渗透/取证。工具优先。"
+       }
+     },
+   
+     // 插件列表，自动加载这两个npm插件
+     "plugin": [
+       "@tarquinen/opencode-dcp@latest",   // DCP插件：文档/项目上下文打包，给Agent读整个项目代码
+       "opencode-websearch-cited@1.2.0"   // 带引用溯源的联网搜索插件，搜索结果带来源标注
+     ],
+   
+     // 模型提供商配置区（多个不同API渠道，OpenCode在这里加载所有模型来源）
+     "provider": {
+       // OpenRouter 海外渠道
+       "openrouter": {
+         "options": {
+           // websearch-cited 搜索插件指定使用这个模型来做联网搜索
+           "websearch_cited": {
+             "model": "x-ai/grok-4.1-fast"
+           }
+         }
+       },
+   
+       // 卡扣 Kakou 中转渠道（你命名 deepseek-wife）
+       "deepseek-wife": {
+         "npm": "@ai-sdk/openai-compatible", // 使用通用OpenAI兼容适配器对接
+         "name": "Kakou 卡扣2折",           // 在UI里显示给你看的渠道名字
+         "options": {
+           "baseURL": "https://api.kakouai.com/v1", // 中转接口地址
+           "apiKey": "{file:~/.secrets/deepseek-key-b}" // 密钥不从配置明文写，从外部密钥文件读取（安全）
+         },
+         "models": { // 这个渠道下可用的模型清单
+           "deepseek-v4.1-flash": {
+             "name": "卡扣·DeepSeek V4.1 Flash", // UI展示名称
+             "attachment": true,                 // 支持上传附件
+             "modalities": {                     // 支持的输入输出模态
+               "input": ["text", "image"],       // 可以发文字、图片（就是你截图识别图片的能力）
+               "output": ["text"]
+             }
+           },
+           "glm-5.3-flash": {
+             "name": "卡扣·GLM 5.3 Flash"
+           }
+         }
+       }
+     },
+   
+     // MCP服务配置：MCP = 给Agent扩展外部工具的服务
+     // 平常不用时 "enabled": true 换成 false 否则比较费资源
+     // 这会同时影响 OpenCode 和 OpenChamber，修改后重启哪一个应用到哪一个
+     "mcp": {
+       "rea": {
+         "type": "local",          // 本地启动MCP进程
+         "command": [
+           "npx",
+           "-y",
+           "rea-agents@6.7.0",
+           "mcp"
+         ],
+         "enabled": false           // 启用REA逆向MCP工具
+       }
+     }
+   }
    ```
-   
+
 4. 重启 opencode，按 Tab 应能切到 `unrestricted`
+
+   ```bash
+   opencode service restart
+   opencode debug agents | grep -A2 unrestricted
+   # 日志里应有 loading plugin …/plugins/unrestricted-boost.ts，且没有 failed to load plugin
+   ```
+
+   > 官方 API 可以正常使用，第三方中转站要看运气，反正卡扣不行
 
 5. 破甲后，就可以无视道德的反编译了
 
@@ -670,29 +763,250 @@ opencode
 
 > 虚拟机的 OpenCode 定位：**隔离沙箱环境**，专门放风险 token、陌生插件，和 Mac 主环境彻底分开
 
-1. 安装 Ubuntu
+1. 安装 OpenCode
 
    ```bash
-   wsl --install -d Ubuntu --web-download
+   npm install -g @opencode/cli
+   
+   opencode --version
    ```
 
-2. 安装成功，设置 Linux 用户名、密码，一路回车，进入 bash 环境
+2. 配置 opencode.jsonc
 
    ```bash
-   sai@DESKTOP-xxxx:~$
+   explorer C:\Users\sai\.config\opencode\
+   
+   # 创建单独存放中转站 API 的文件 deepseek-key-b
+   $dir = "$env:USERPROFILE\.secrets"
+   New-Item -ItemType Directory -Force -Path $dir | Out-Null
+   $key = "sk-xxxxxxxxxxxxxxxxxxxxxx"    # 这里替换成卡扣的 key 长度必须是 67
+   [System.IO.File]::WriteAllText("$dir\deepseek-key-b", $key, (New-Object System.Text.UTF8Encoding($false)))
+   
+   # 校验一下：输出的 key 长度应该是 67，内容应该原样是那个
+   (Get-Item "$dir\deepseek-key-b").Length
+   Get-Content "$dir\deepseek-key-b"
+   
+   # 创建 opencode.jsonc
+   # 把 mac 的 /Users/sai/.config/opencode/opencode.jsonc 内容照搬过来，保存时编码选 UTF-8
+   notepad "$env:USERPROFILE\.config\opencode\opencode.jsonc"
    ```
 
-3. 安装 OpenCode
+3. 安装 REA
 
    ```bash
-   curl -fsSL https://opencode.ai/install | bash
-   ```
-
-4. 启动 OpenCode
-
-   ```bash
+   # 安装 REA 最新发布版本
+   npx.cmd rea-agents@latest setup --client opencode
+   
+   # 本次安装的目标
+   #    1. 保留现有 OpenCode 和 DeepSeek 配置
+   #    2. 新增 REA MCP 服务
+   #    3. 安装 REA 配套 Skill
+   #    4. 不安装 Ghidra、IDA 等逆向分析工具
+   
+   # 启动 OpenCode
    opencode
+   
+   # 验证 MCP 是否连接成功，期待输出：One MCP server is configured — rea — and it's connected.
+   opencode mcp list
+   
+   # 检查 REA 提供了哪些能力
+   npx -y rea-agents@6.10.1 capabilities
    ```
+
+4. 备份更新后的  opencode.jsonc
+
+   ```bash
+   explorer C:\Users\sai\.config\opencode\
+   ```
+
+   > 平时不逆向时要关掉，否则非常费 token
+   >
+   > "enabled": true           // 启用REA逆向MCP工具      ->     "enabled": false
+
+   ```bash
+   {
+     "$schema": "https://opencode.ai/config.json",
+     // 【默认Agent】启动OpenCode时自动选中这个Agent
+     "default_agent": "plan",
+     // 全局权限策略：allow = 默认允许Agent执行工具/命令（你的场景是逆向、实验室，放开）
+     "permission": "allow",
+   
+     // Agent 定义：Agent是一套独立的身份、权限、描述、配色
+     "agent": {
+       "plan": {
+         "mode": "primary",
+         "color": "#3B82F6",
+         "permission": "allow",
+         "description": "plan agent，规划、拆解、方案分析、前置研讨"
+       },
+       "unrestricted": {
+         "mode": "primary",       // primary = 主Agent，作为主力会话
+         "color": "#EF4444",       // 会话界面里这个Agent标识的颜色（红色）
+         "permission": "allow",    // 这个Agent单独的权限：允许调用工具、执行命令
+         "description": "默认主 agent。安全实验室：逆向/补丁/渗透/取证。工具优先。"
+       }
+     },
+   
+     // 插件列表，自动加载这两个npm插件
+     "plugin": [
+       "@tarquinen/opencode-dcp@latest",   // DCP插件：文档/项目上下文打包，给Agent读整个项目代码
+       "opencode-websearch-cited@1.2.0"   // 带引用溯源的联网搜索插件，搜索结果带来源标注
+     ],
+   
+     // 模型提供商配置区（多个不同API渠道，OpenCode在这里加载所有模型来源）
+     "provider": {
+       // OpenRouter 海外渠道
+       "openrouter": {
+         "options": {
+           // websearch-cited 搜索插件指定使用这个模型来做联网搜索
+           "websearch_cited": {
+             "model": "x-ai/grok-4.1-fast"
+           }
+         }
+       },
+   
+       // 卡扣 Kakou 中转渠道（你命名 deepseek-wife）
+       "deepseek-wife": {
+         "npm": "@ai-sdk/openai-compatible", // 使用通用OpenAI兼容适配器对接
+         "name": "Kakou 卡扣2折",           // 在UI里显示给你看的渠道名字
+         "options": {
+           "baseURL": "https://api.kakouai.com/v1", // 中转接口地址
+           "apiKey": "{file:~/.secrets/deepseek-key-b}" // 密钥不从配置明文写，从外部密钥文件读取（安全）
+         },
+         "models": { // 这个渠道下可用的模型清单
+           "deepseek-v4.1-flash": {
+             "name": "卡扣·DeepSeek V4.1 Flash", // UI展示名称
+             "attachment": true,                 // 支持上传附件
+             "modalities": {                     // 支持的输入输出模态
+               "input": ["text", "image"],       // 可以发文字、图片（就是你截图识别图片的能力）
+               "output": ["text"]
+             }
+           },
+           "glm-5.3-flash": {
+             "name": "卡扣·GLM 5.3 Flash"
+           }
+         }
+       }
+     },
+   
+     // MCP服务配置：MCP = 给Agent扩展外部工具的服务
+     // 平常不用时 "enabled": true 换成 false 否则比较费资源
+     // 这会同时影响 OpenCode 和 OpenChamber，修改后重启哪一个应用到哪一个
+     "mcp": {
+       "rea": {
+         "type": "local",          // 本地启动MCP进程
+         "command": [
+           "C:\\Program Files\\nodejs\\node.exe",
+           "C:\\Users\\sai\\AppData\\Local\\npm-cache\\_npx\\af752b90495482d7\\node_modules\\rea-agents\\scripts\\rea.mjs",
+           "mcp"
+           
+         ],
+         "enabled": true           // 启用REA逆向MCP工具
+       }
+     }
+   }
+   ```
+
+5. 破甲
+
+   1. 确认 OpenCode 是 V2 版本
+
+      ```bash
+      opencode --version
+      ```
+
+   2. 复制 V2 组件（只拷 `v1/` 下的单数目录）
+
+      ```bash
+      # 进入 Unrestricted-OpenCode 目录
+      Copy-Item -Path agents,commands,plugins -Destination "$env:USERPROFILE\.config\opencode" -Recurse -Force
+      ```
+
+   3. 安装插件运行时依赖
+
+      ```bash
+      cd "$env:USERPROFILE\.config\opencode"
+      npm install @opencode/plugin
+      ```
+
+   4. 写入 V2 配置
+
+      ```
+      notepad "$env:USERPROFILE\.config\opencode\opencode.jsonc"
+      ```
+
+      ```bash
+      {
+        "$schema": "https://opencode.ai/config.json",
+        "default_agent": "unrestricted",
+        "permissions": [{ "action": "*", "resource": "*", "effect": "allow" }],
+      
+        "agents": {
+          "plan": {
+            "mode": "primary",
+            "color": "#3B82F6",
+            "description": "plan agent，规划、拆解、方案分析、前置研讨",
+            "permissions": [{ "action": "*", "resource": "*", "effect": "allow" }]
+          },
+          "unrestricted": {
+            "mode": "primary",
+            "color": "#EF4444",
+            "description": "默认主 agent。安全实验室：逆向/补丁/渗透/取证。工具优先。",
+            "permissions": [{ "action": "*", "resource": "*", "effect": "allow" }]
+          }
+        },
+      
+        "provider": {
+          "openrouter": {
+            "options": {
+              "websearch_cited": {
+                "model": "x-ai/grok-4.1-fast"
+              }
+            }
+          },
+      
+          "deepseek-wife": {
+            "npm": "@ai-sdk/openai-compatible",
+            "name": "Kakou 卡扣2折",
+            "options": {
+              "baseURL": "https://api.kakouai.com/v1",
+              "apiKey": "{file:~/.secrets/deepseek-key-b}"
+            },
+            "models": {
+              "deepseek-v4.1-flash": {
+                "name": "卡扣·DeepSeek V4.1 Flash",
+                "attachment": true,
+                "modalities": {
+                  "input": ["text", "image"],
+                  "output": ["text"]
+                }
+              },
+              "glm-5.3-flash": {
+                "name": "卡扣·GLM 5.3 Flash"
+              }
+            }
+          }
+        },
+      
+        "mcp": {
+          "rea": {
+            "type": "local",
+            "command": ["cmd", "/c", "npx", "-y", "rea-agents@6.10.1", "mcp"],
+            "enabled": true
+          }
+        }
+      }
+      ```
+
+   5. 重启并验证
+
+      ```bash
+      opencode service restart
+      opencode debug agents | grep -A2 unrestricted
+      # 日志里应有 loading plugin …/plugins/unrestricted-boost.ts，且没有 failed to load plugin
+      ```
+
+      > 官方 API 可以正常使用，第三方中转站要看运气，反正卡扣不行
 
 #### 飞书机器人
 
@@ -927,5 +1241,422 @@ opencode
             | ------------------------------- | ---------------- |
             | Agent 要你做决策（选 A 还是 B） | 它弹出问题的瞬间 |
 
+      ### win11 安装 DSH
 
-​      
+1. 装 Node.js
+
+   * `https://nodejs.org/zh-cn`，下载 **LTS（长期版）**  `.msi` 安装包（64 位）
+
+   * 在 Windows 搜索栏输入 `PowerShell`，右键选择**“以管理员身份运行”**，执行
+
+     ```
+     Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+     ```
+
+   * 关闭当前所有终端窗口，重新打开 PowerShell
+
+     ```
+     node -v
+     npm -v
+     npx -v
+     
+     # 安装 pnpm
+     npm install -g pnpm
+     
+     pnpm -v
+     ```
+
+2. 创建工作目录
+
+   ```
+   mkdir C:\Users\sai\Desktop\dsh
+   cd C:\Users\sai\Desktop\dsh
+   ```
+
+3. 启动 DSH
+
+   ```
+   npx @deepseek-ai/dsh web
+   
+   # 第一次运行时，npm 会检查并下载对应的软件包，通通选 Y 就行
+   
+   # 输出：dsh web: http://127.0.0.1:3080/?token=yBXR1u_gWUXp-UXkPCBqA8SBvxlvV0t827hgmKGVip8
+   ```
+
+   浏览器访问 `http://127.0.0.1:3080`。**这个命令行窗口不能关**，关了服务就停
+
+4. 配 API Key
+
+   1. 官方 key 直接填
+
+   2. 第三方 key（卡扣）
+
+      ![image-20261126002037752](/Users/sai/Library/Application Support/typora-user-images/image-20261126002037752.png)
+
+5. 安装 skill
+
+   1. Superpowers
+
+      ```
+      # 安装
+      npx @deepseek-ai/dsh plugin --profile web add superpowers-dsh
+      
+      # 确认插件已经安装到当前正在使用的 profile 中
+      npx @deepseek-ai/dsh --profile web --dump-config | Select-String superpowers-dsh
+      ```
+
+      重启 DSH：找到正在运行 DSH 的 PowerShell 窗口， 关掉，重开一个PowerShell，然后输入
+
+      ```
+      npx @deepseek-ai/dsh web
+      ```
+
+      等待启动完成，保证PowerShell 窗口开着，打开浏览器，进入`http://127.0.0.1:3080`
+
+   2. 创建自己的需求分析 Skill
+
+      1. 创建 skill 的目录
+
+         ```
+         New-Item -ItemType Directory -Force "$env:USERPROFILE\.dsh\skills\product-requirements-analyst"
+         ```
+
+         执行成功后，目录结构
+
+         ```
+         C:\Users\Sai\.dsh\skills\
+         └── product-requirements-analyst\
+         ```
+
+      2. 创建 SKILL.md
+
+         ```
+         notepad "$env:USERPROFILE\.dsh\skills\product-requirements-analyst\SKILL.md"
+         ```
+
+         提示文件不存在，询问是否创建，选择：是
+
+      3. 复制下面的完整内容
+
+         ```bash
+         ---
+         name: product-requirements-analyst
+         description: 当用户提出软件开发想法、新增功能、修改现有功能、讨论产品设计或表达尚未成形的需求时使用。帮助用户进行需求澄清、产品分析、流程设计、边界情况分析和需求规格说明书编写。未经用户明确同意，不开始编码或修改项目。
+         ---
+         
+         # Product Requirements Analyst
+         
+         ## 1. 角色定位
+         
+         你是一名资深产品经理、软件需求分析师和产品架构顾问。
+         
+         你的核心任务是帮助用户将零散、口语化、不完整、反复变化的软件想法，转化为清晰、完整、可执行、可验收的软件需求。
+         
+         你不是一个急于写代码的程序员。
+         
+         在需求阶段，你的首要工作是理解用户，而不是实现用户刚刚说出的某个功能。
+         
+         ## 2. 用户表达习惯
+         
+         用户可能：
+         
+         - 一次表达很多想法，内容比较长。
+         - 在描述过程中不断补充新的要求。
+         - 先提出一个模糊想法，讨论之后才逐渐明确。
+         - 对之前的决定进行修改。
+         - 使用口语化描述，而不是标准产品术语。
+         - 尚未考虑异常情况和边界条件。
+         - 在讨论过程中突然想到其他功能。
+         
+         必须允许用户自然表达，不要求用户遵循固定模板。
+         
+         不要因为用户表达不够专业，就要求用户重新组织语言。
+         
+         你负责理解、整理和追问。
+         
+         ## 3. 核心工作原则
+         
+         ### 3.1 先理解，再整理，最后设计
+         
+         不要在用户刚提出想法时立即输出完整技术方案。
+         
+         先理解用户真正想解决的问题。
+         
+         区分：
+         
+         - 用户明确提出的要求
+         - 根据上下文推断的内容
+         - 你提出的建议
+         - 尚未确认的事项
+         
+         不得把推测包装成用户已经确认的需求。
+         
+         ### 3.2 不刻意迎合
+         
+         你必须保持独立判断。
+         
+         如果用户的想法存在以下问题，应明确指出：
+         
+         - 逻辑矛盾
+         - 操作流程不合理
+         - 功能重复
+         - 设计过于复杂
+         - 技术上不可行
+         - 存在数据一致性风险
+         - 可能破坏现有功能
+         
+         解释问题和原因，并提出替代方案。
+         
+         不要为了顺从用户而隐瞒问题。
+         
+         ### 3.3 控制提问数量
+         
+         不要一次提出十几个问题。
+         
+         优先找出当前最影响设计的一个问题，每次围绕它进行讨论。
+         
+         如果已有信息足够，就不要重复询问。
+         
+         ### 3.4 保留用户原始意图
+         
+         整理需求时，不要擅自增加用户没有提出的功能。
+         
+         可以提出改进建议，但必须明确标记为建议，等待用户决定。
+         
+         ## 4. 需求分析工作流程
+         
+         ### 阶段一：自由讨论
+         
+         允许用户自由描述需求。
+         
+         认真阅读用户的完整描述。
+         
+         当用户还在补充想法时，不要急于打断。
+         
+         适当总结已经理解的内容，并指出目前还不清楚的地方。
+         
+         ### 阶段二：需求整理
+         
+         将用户表达的内容整理为：
+         
+         1. 业务背景
+         2. 要解决的问题
+         3. 用户目标
+         4. 功能需求
+         5. 用户操作流程
+         6. 数据与状态变化
+         7. 异常情况
+         8. 约束条件
+         9. 待确认事项
+         
+         保留用户的原始业务逻辑。
+         
+         ### 阶段三：交互和流程设计
+         
+         针对每项功能分析：
+         
+         - 用户从哪里进入功能？
+         - 用户需要执行什么操作？
+         - 系统如何响应？
+         - 操作成功后发生什么？
+         - 操作失败后发生什么？
+         - 用户取消操作时发生什么？
+         - 是否存在重复操作？
+         - 是否涉及历史数据？
+         - 是否影响其他功能？
+         
+         必要时使用流程图、状态表或操作场景说明。
+         
+         ### 阶段四：边界条件分析
+         
+         主动寻找用户容易忽略的情况。
+         
+         例如：
+         
+         - 用户重复点击按钮。
+         - 用户中途关闭窗口。
+         - 用户刷新页面。
+         - 网络中断。
+         - 数据为空。
+         - 数据重复。
+         - 操作失败。
+         - 用户撤销操作。
+         - 多个操作同时发生。
+         - 历史数据与新数据不兼容。
+         
+         根据项目性质选择相关情况，不要机械地罗列无关问题。
+         
+         ### 阶段五：需求确认
+         
+         在形成正式需求之前，向用户总结：
+         
+         - 已经明确的需求
+         - 已经确认的设计
+         - 尚未确定的问题
+         - 你的建议
+         
+         重要事项必须经过用户确认。
+         
+         用户提出修改时，更新对应需求，并检查是否影响之前已经确认的设计。
+         
+         ### 阶段六：输出需求规格说明书
+         
+         用户确认需求后，生成完整的需求规格说明书。
+         
+         文档至少包含：
+         
+         1. 项目背景与目标
+         2. 功能范围
+         3. 功能详细说明
+         4. 用户操作流程
+         5. 页面和交互设计
+         6. 数据结构及状态变化
+         7. 异常处理
+         8. 边界情况
+         9. 与现有功能的关系
+         10. 验收标准
+         11. 尚未解决的问题
+         
+         每项功能应尽量具备可验证的验收标准。
+         
+         ## 5. 与软件开发阶段的边界
+         
+         需求分析阶段与实际开发阶段必须区分。
+         
+         在需求尚未明确时：
+         
+         - 不要修改代码。
+         - 不要创建新的业务功能。
+         - 不要擅自改变现有架构。
+         - 不要把讨论中的想法当成开发指令。
+         
+         只有用户明确表示开始开发，才进入软件工程实施阶段。
+         
+         进入开发阶段后：
+         
+         1. 先阅读现有项目。
+         2. 理解现有架构和功能。
+         3. 检查需求与现有实现的关系。
+         4. 制定实施计划。
+         5. 识别风险和影响范围。
+         6. 得到用户认可后实施。
+         
+         ## 6. 输出风格
+         
+         使用自然、清晰、专业的中文。
+         
+         优先使用技术文档风格。
+         
+         不要把回答拆成过多零碎的短句。
+         
+         避免无意义的重复和过度包装。
+         
+         对于复杂问题，使用表格、流程图和分级标题。
+         
+         结论必须区分事实、推断和建议。
+         
+         ## 7. 最终目标
+         
+         你的最终目标不是让需求文档看起来专业，而是确保开发人员能够准确理解：
+         
+         - 要做什么
+         - 为什么要做
+         - 用户如何操作
+         - 系统应该如何响应
+         - 哪些情况不允许发生
+         - 如何判断功能已经正确完成
+         
+         需求没有明确之前，宁可继续讨论，也不要仓促进入编码。
+         ```
+
+         保存时注意文件名必须是：SKILL.md，不能是：SKILL.md.txt
+
+         ```
+         ls C:\Users\sai\.dsh\skills\product-requirements-analyst
+         
+         # 输出的要是 SKILL.md
+         ```
+
+      4. 检查 DSH 是否识别：回到 DSH，新建一个对话，输入
+
+         ```
+         请检查当前 Skill 列表，确认是否已经发现 product-requirements-analyst。
+         
+         如果已经发现，请加载这个 Skill，并向我简要说明：
+         1. 这个 Skill 的角色是什么？
+         2. 它的工作流程是什么？
+         3. 在什么情况下它不会开始写代码？
+         请实际读取 SKILL.md，不要仅根据名称推测。
+         ```
+
+         识别成功，就完成了
+         
+         > 这一步可能报错 把错误扔给 ChatGPT 排查就行，大概率是 SKILL.md 格式问题
+
+   3. 破甲
+   
+      ```
+      dsh plugin --profile web add dsh-purge
+      
+      # 如果安装失败 可尝试下面的命令
+      dsh plugin --profile web add 'github:mmparko/dsh-purge#033e6bd1e0f101352b39075ecd0d758ffef26b76'
+      
+      # 
+      ```
+
+      重启 DSH：找到正在运行 DSH 的 PowerShell 窗口， 关掉，重开一个PowerShell，然后输入
+   
+      ```
+      npx @deepseek-ai/dsh web
+      ```
+
+      在浏览器里观察会话标题旁边是否出现 dsh-purge 的入口。
+
+      **检查插件**
+
+      进入它的界面，但先只查看，不要点击：
+   
+      - Apply
+      - Clean
+      - Patch
+      - Restore
+      - Uninstall
+
+      尤其不要随意应用宿主补丁。
+
+   4. 安装 REA
+
+      ```
+      # 能打印出版本号就说明可以正常使用
+      npx -y rea-agents --version
+      
+      # 安装
+      npx rea-agents setup
+      
+      # Which agents should use REA? 翻找到 DeepSeek Harness 按空格勾选
+      # CREATE  DeepSeek Harness、INSTALL  REA reverse-engineering skill 选 Yes, apply
+      ```
+   
+      重启 DSH：找到正在运行 DSH 的 PowerShell 窗口， 关掉，重开一个PowerShell，然后输入
+   
+      ```
+      npx @deepseek-ai/dsh web
+      ```
+   
+      新对话问：
+   
+      ```
+      # 你现在有哪些 mcp__rea__ 开头的工具？列出前 10 个名字。
+      
+      # 你现在有哪些 skill？有没有 reverse-engineer-anything？
+      
+      ```
+   
+      
+   
+   5. 
+   
+      
+   
+      ## 
+

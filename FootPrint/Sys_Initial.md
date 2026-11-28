@@ -62,9 +62,9 @@ VPN开启后Chrome可翻墙，终端不行
 >    ```bash
 >    # 创建 .zshrc 文件
 >    echo >> ~/.zshrc
->                                                                                                                                           
+>                                                                                                                                              
 >    open ~/.zshrc
->                                                                                                                                           
+>                                                                                                                                              
 >    # 在文件最后添加下面两句
 >    export http_proxy="http://127.0.0.1:8234" export https_proxy="http://127.0.0.1:8234"
 >    ```
@@ -112,7 +112,7 @@ VPN开启后Chrome可翻墙，终端不行
 >    echo 'export HOMEBREW_NO_AUTO_UPDATE=1' >> ~/.zshrc
 >    # 安装某个包时，如果它已经安装过但版本旧了，不要自动把它升级到最新版
 >    echo 'export HOMEBREW_NO_INSTALL_UPGRADE=1' >> ~/.zshrc
->                         
+>                            
 >    # 立即重新加载并执行 ~/.zshrc 里的配置，使修改马上生效
 >    source ~/.zshrc
 >    ```
@@ -254,14 +254,14 @@ VPN开启后Chrome可翻墙，终端不行
 >
 >     ```bash
 >     open ~/.oh-my-zsh/themes
->                                                                                     
+>                                                                                         
 >     打开agnoster.zsh-theme文件，找到prompt_context()函数，替换为
 >     prompt_context() {
 >       if [[ "$USERNAME" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
 >         prompt_segment black default "Sai"
 >       fi
 >     }
->                                                                                     
+>                                                                                         
 >     source ~/.oh-my-zsh/themes/agnoster.zsh-theme
 >     ```
 >
@@ -995,22 +995,12 @@ VPN开启后Chrome可翻墙，终端不行
 
 ##### 屏蔽更新
 
-* Visual Studio Code：`Command + Shift + P` 打开命令面板
+* 改 /etc/hosts
 
   ```bash
-  # 只需安装一次，之后不用管
-  Shell Command: Install 'code' command in PATH
-  ```
-
-* 打开终端
-
-  ```bash
-  sudo code /etc/hosts
-  # 或者
+  # 在 nano 中修改，Control+O 保存、回车确认、Control+X 退出
   sudo nano /etc/hosts
   ```
-
-* 在VS Code  中修改并保存（保存时弹窗询问是否允许覆盖，点击允许并输入密码即可）
 
   ```bash
   # 系统默认配置，请勿修改
@@ -1073,7 +1063,8 @@ VPN开启后Chrome可翻墙，终端不行
 * 刷新 DNS 缓存
 
   ```bash
-  sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder
+  sudo dscacheutil -flushcache
+  sudo killall -HUP mDNSResponder
   ```
   
 * 关掉自动检查
@@ -1087,8 +1078,23 @@ VPN开启后Chrome可翻墙，终端不行
   sudo defaults write $P CriticalUpdateInstall -bool false
   sudo defaults delete $P RecommendedUpdates 2>/dev/null
   sudo killall softwareupdated; sudo killall cfprefsd
+  # softwareupdated 会被 launchd 立刻重启，属正常，不用管
   ```
 
+* 关掉通知代理
+
+  ```bash
+  launchctl disable gui/$(id -u)/com.apple.SoftwareUpdateNotificationManager
+  
+  # 验证，期望： "com.apple.SoftwareUpdateNotificationManager" => disabled
+  launchctl print-disabled gui/$(id -u) | grep SoftwareUpdateNotificationManager
+  
+  # 回滚
+  launchctl enable gui/$(id -u)/com.apple.SoftwareUpdateNotificationManager
+  ```
+  
+  
+  
 * 系统设置手动确认
 
   * **通用 > 软件更新 > ⓘ** —— `自动更新`、`下载新更新`、`安装 macOS 更新`、`安装安全响应` 全部关闭
@@ -1103,19 +1109,23 @@ VPN开启后Chrome可翻墙，终端不行
   echo "1) 自动检查是否关闭（期望 0）"
   defaults read /Library/Preferences/com.apple.SoftwareUpdate AutomaticCheckForUpdates
   
-  echo "2) 待装列表（期望空数组 ()）"
-  defaults read /Library/Preferences/com.apple.SoftwareUpdate RecommendedUpdates
+  echo "2) 待装列表（期望 () 或 does not exist，两者都算对）"
+  defaults read /Library/Preferences/com.apple.SoftwareUpdate RecommendedUpdates 2>&1
   
-  echo "3) 更新域名是否连不上（期望 000）"
+  echo "3) 通知代理是否禁用（期望 => disabled）"
+  launchctl print-disabled gui/$(id -u) | grep SoftwareUpdateNotificationManager
+  
+  echo "4) 更新域名是否连不上（期望 000）"
   curl -m 5 -o /dev/null -s -w '%{http_code}\n' https://gdmf.apple.com/v2/pmv
   
-  echo "4) 系统层检查（期望报「不能连接到软件更新服务器」）"
+  echo "5) 系统层检查（期望报「不能连接到软件更新服务器」）"
   softwareupdate --list
   
-  echo "5) Xcode 未受影响（期望正常版本号）"
+  echo "6) Xcode 未受影响（期望正常版本号）"
   xcodebuild -version
   
-  # 第 3、4 条比 pgrep 有用得多——它们直接验证「更新通道断了」这个结果，而不是去猜某个进程在不在。
+  # 不要用 pgrep 判断：代理禁用后旧进程仍在跑，重启前永远有输出。
+  # 也不要用 LastSuccessfulDate 判断：扫描失败时它照样更新（今天 10:13 更新了，同时 LastResultCode = 100）。
   ```
 
 ##### iPhone 桌面展示多张照片

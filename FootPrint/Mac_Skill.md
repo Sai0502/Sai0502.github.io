@@ -407,12 +407,30 @@ opencode
    | **Scrapling**     | 控制网页：网页自动化靠它                                     |
    | **REA**           | Reverse-Engineer-Anything，逆向神器                          |
 
-3. 安装 [OpenChamber 图像界面](https://github.com/openchamber/openchamber)
+3. [OpenCode Browse](https://opencode.ai/product/browse)：Chrome 插件 + mcp，让 OpenCode 使用真实浏览器（带本地 cookie 和插件）
+
+   1. 打开 https://opencode.ai/product/browse ，**Add to Chrome**
+
+   2. 在 OpenChamber 或 Item2 的 OpenCode 界面安装命令行
+
+      ```bash
+      curl -fsSL https://opencode.ai/browse/install | bash
+      ```
+
+   3. 在 `~/.config/opencode/AGENTS.md`，追加
+
+      ```bash
+      ## 浏览器
+      - 需要打开网页、登录、填表、截图、读页面内容时，优先使用 browse MCP 的 browse_* 工具。
+      - 只有 browse 工具不可用（工具列表里没有 browse_*）时，才退回 curl / webfetch。
+      ```
+
+4. 安装 [OpenChamber 图像界面](https://github.com/openchamber/openchamber)
 
    1. 添加项目目录：Add Project
    2. 配置模型：DeepSeek V4.1 Flash 1017（之前在 opencode 终端已输入 API Key ，无需再填）
 
-4. 用法
+5. 用法
 
    ```bash
    # 进入 OpenCode 要操作的目录
@@ -435,10 +453,10 @@ opencode
    opencode --continue
    ```
 
-5. 第 3 方中转站用法
+6. 第 3 方中转站用法
 
    >  太复杂了，让豆包桌面版托管来做吧
-   
+
    > 1. 修改 ~/.config/opencode/opencode.jsonc
    >
    >    ```bash
@@ -523,7 +541,7 @@ opencode
    >    - 出 `401 / authentication` → key 没读到，重做第 5 步，用这条查长度：`wc -c ~/.secrets/deepseek-key-b`（应接近 67）。
    >    - 出 `model not found / 404` → 模型 ID 不对，跑 `curl -s [https://api.kakouai.com/v1/models](https://api.kakouai.com/v1/models) -H "Authorization: Bearer $(cat ~/.secrets/deepseek-key-b)"` 看它到底返回哪几个 ID。
    >
-   
+
 
 #### OpenCode 破甲（opencode-unrestricted）
 
@@ -1241,7 +1259,8 @@ opencode
             | ------------------------------- | ---------------- |
             | Agent 要你做决策（选 A 还是 B） | 它弹出问题的瞬间 |
 
-      ### win11 安装 DSH
+
+### win11 安装 DSH（废弃 DSH 太难用了）
 
 1. 装 Node.js
 
